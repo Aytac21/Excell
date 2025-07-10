@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Engine Oil Excel Data Processor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: linear-gradient(135deg, #3548a1 0%, #370d62 100%);
+        min-height: 100vh;
+        color: white;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 30px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      .file-upload {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 2px dashed rgba(255, 255, 255, 0.3);
+        text-align: center;
+      }
+      .file-upload input[type="file"] {
+        display: none;
+      }
+      .file-upload-label {
+        background: linear-gradient(45deg, #4caf50, #45a049);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: bold;
+        display: inline-block;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      }
+      .file-upload-label:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      }
+      .tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+      .tab {
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        font-weight: bold;
+      }
+      .tab:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .tab.active {
+        background: rgba(255, 255, 255, 0.3);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .tab-content {
+        display: none;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .tab-content.active {
+        display: block;
+        overflow-x: auto;
+        max-width: 100%;
+        height: 500px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 12px;
+        min-width: 120px;
+      }
+      th {
+        background: rgba(255, 255, 255, 0.2);
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.9em;
+      }
+      tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .download-btn {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        margin: 20px auto;
+        display: block;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      }
+      .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+      }
+      .download-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .info-box {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #4caf50;
+      }
+      .product-type {
+        font-weight: bold;
+        color: #4caf50;
+        margin-bottom: 10px;
+      }
+      .status {
+        text-align: center;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .status.success {
+        color: #4caf50;
+      }
+      .status.error {
+        color: #ff6b6b;
+      }
+      .category-info {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #4caf50;
+      }
+      .category-info h3 {
+        margin: 0 0 10px 0;
+        color: #4caf50;
+      }
+      .category-info p {
+        margin: 5px 0;
+      }
+      .column-info {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #2196f3;
+      }
+      .column-info h3 {
+        margin: 0 0 10px 0;
+        color: #2196f3;
+      }
+      .column-list {
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🛢️ Engine Oil Excel Data Processor</h1>
+
+      <div class="info-box">
+        <div class="product-type">Excel Fayl Emal Sistemi</div>
+        <p>
+          Bu sistem all_products.xlsx faylından məlumatları oxuyur və 5 ayrı
+          sheet-ə ayırır: Sheet1, Sheet2, Standart, Premium, OEM.
+        </p>
+      </div>
+
+      <div class="column-info">
+        <h3>Sheet1 Sütunları</h3>
+        <div class="column-list">
+          <strong>Əsas Sütunlar:</strong> ID, Product name, Engine oil,
+          Passenger car motor oil (PCMO), 1L, 1.5L, 4L, 5L, 6L, 7L, 10L, 18L
+          <br />
+          <strong>Məhsul Adları:</strong> Aminol™ Special Generation SLG1 0W-20
+          SP/GF-6A
+          <br />
+          <strong>Məhsul Təyinatı:</strong> Bidon (Açıq göy), Qapaq (Qırmızı
+          falqa), Etiket (Orqinal), Qutu (Kıpaj), Palet
+        </div>
+      </div>
+
+      <div class="column-info">
+        <h3>Sheet2 Sütunları</h3>
+        <div class="column-list">
+          <strong>Əsas Sütunlar:</strong> Məhsulun ID, Məhsulun adı,
+          Spesifikasıyanın adı, Spesifikasıyanın tipi, Material, Xarakteristika,
+          Ölçü vahidi, Miqdar, Material, Xarakteristika
+          <br />
+          <strong>Materiallar:</strong> Bidon (1LT Açıq Göy Aminol), Qapaq
+          (Qırmızı), Etiket (Aminol Special Generation), Qutu (Kıpaj), Palet,
+          BE, GT, PA, SX, ZX
+        </div>
+      </div>
+
+      <div class="column-info">
+        <h3>Kateqoriya Məhsulları</h3>
+        <div class="column-list">
+          <strong>Standart:</strong> Standart keyfiyyət məhsulları
+          <br />
+          <strong>Premium:</strong> ILSAC GF-6A, GF-6B, GF-5 və API SP, SN Plus
+          keyfiyyət məhsulları
+          <br />
+          <strong>OEM:</strong> 0W-20 SP/GF-6A yüksək keyfiyyət məhsulları
+        </div>
+      </div>
+
+      <div class="file-upload">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <label for="fileInput" class="file-upload-label">
+          📁 all_products.xlsx faylını seçin
+        </label>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('sheet1')">Sheet1</button>
+        <button class="tab" onclick="showTab('sheet2')">Sheet2</button>
+        <button class="tab" onclick="showTab('standart')">Standart</button>
+        <button class="tab" onclick="showTab('premium')">Premium</button>
+        <button class="tab" onclick="showTab('oem')">OEM</button>
+      </div>
+
+      <div id="sheet1" class="tab-content active">
+        <h2>Sheet1 - Məhsul Məlumatları</h2>
+        <table id="sheet1Table"></table>
+      </div>
+
+      <div id="sheet2" class="tab-content">
+        <h2>Sheet2 - Material Spesifikasiyaları</h2>
+        <table id="sheet2Table"></table>
+      </div>
+
+      <div id="standart" class="tab-content">
+        <h2>Standart Məhsullar</h2>
+        <div id="standartInfo" class="category-info" style="display: none">
+          <h3>Standart Məhsul</h3>
+          <p id="standartProduct"></p>
+        </div>
+        <table id="standartTable"></table>
+      </div>
+
+      <div id="premium" class="tab-content">
+        <h2>Premium Məhsullar</h2>
+        <div id="premiumInfo" class="category-info" style="display: none">
+          <h3>Premium Məhsul</h3>
+          <p id="premiumProduct"></p>
+        </div>
+        <table id="premiumTable"></table>
+      </div>
+
+      <div id="oem" class="tab-content">
+        <h2>OEM Məhsullar</h2>
+        <div id="oemInfo" class="category-info" style="display: none">
+          <h3>OEM Məhsul</h3>
+          <p id="oemProduct"></p>
+        </div>
+        <table id="oemTable"></table>
+      </div>
+
+      <button
+        class="download-btn"
+        id="downloadBtn"
+        onclick="downloadExcel()"
+        disabled
+      >
+        📥 Yeni Excel Faylını Yüklə
+      </button>
+    </div>
+
+    <script>
+      let processedData = {
+        sheet1: [],
+        sheet2: [],
+        standart: [],
+        premium: [],
+        oem: [],
+      };
+
+      let categoryProducts = {
+        standart: "",
+        premium: "",
+        oem: "",
+      };
+
+      let originalSheet1 = [];
+      let originalSheet2 = [];
+
+      // Product identification patterns
+      const productPatterns = {
+        standart: ["standart", "standard"],
+        premium: [
+          "premium",
+          "ilsac",
+          "gf-6a",
+          "gf-6b",
+          "gf-5",
+          "api sp",
+          "sn plus",
+        ],
+        oem: ["oem", "0w-20", "sp/gf-6a", "top quality"],
+      };
+
+      // Liter sizes for columns
+      const literSizes = ["1L", "1.5L", "4L", "5L", "6L", "7L", "10L", "18L"];
+
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", handleFile);
+
+      function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+
+            if (workbook.SheetNames.length < 2) {
+              showStatus("Fayl ən azı 2 sheet-ə malik olmalıdır!", "error");
+              return;
+            }
+
+            const sheet1 = XLSX.utils.sheet_to_json(
+              workbook.Sheets[workbook.SheetNames[0]],
+              { header: 1 }
+            );
+            const sheet2 = XLSX.utils.sheet_to_json(
+              workbook.Sheets[workbook.SheetNames[1]],
+              { header: 1 }
+            );
+
+            originalSheet1 = sheet1;
+            originalSheet2 = sheet2;
+
+            processedData.sheet1 = sheet1;
+            processedData.sheet2 = sheet2;
+
+            categorizeProducts(sheet1, sheet2);
+
+            displayTable("sheet1Table", sheet1);
+            displayTable("sheet2Table", sheet2);
+            displayTable("standartTable", processedData.standart);
+            displayTable("premiumTable", processedData.premium);
+            displayTable("oemTable", processedData.oem);
+
+            updateCategoryInfo();
+
+            document.getElementById("downloadBtn").disabled = false;
+
+            showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
+          } catch (error) {
+            showStatus(
+              "Fayl oxunarkən xəta baş verdi: " + error.message,
+              "error"
+            );
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function categorizeProducts(sheet1, sheet2) {
+        processedData.standart = [];
+        processedData.premium = [];
+        processedData.oem = [];
+
+        categoryProducts.standart = "";
+        categoryProducts.premium = "";
+        categoryProducts.oem = "";
+
+        // Find product rows from Sheet1
+        const productRows = sheet1.filter((row, index) => {
+          if (index === 0) return false; // Skip header
+          return row.some(
+            (cell) =>
+              cell &&
+              typeof cell === "string" &&
+              (cell.includes("Aminol") || cell.includes("Special Generation"))
+          );
+        });
+
+        // Process each product
+        productRows.forEach((productRow) => {
+          const productName = getProductName(productRow);
+          const productStr = productRow.join(" ").toLowerCase();
+
+          let category = null;
+
+          // Determine category
+          if (
+            productPatterns.premium.some((pattern) =>
+              productStr.includes(pattern)
+            )
+          ) {
+            category = "premium";
+          } else if (
+            productPatterns.oem.some((pattern) => productStr.includes(pattern))
+          ) {
+            category = "oem";
+          } else if (
+            productPatterns.standart.some((pattern) =>
+              productStr.includes(pattern)
+            )
+          ) {
+            category = "standart";
+          }
+
+          if (category) {
+            if (!categoryProducts[category]) {
+              categoryProducts[category] = productName;
+            }
+
+            const categoryData = generateCategoryData(
+              productRow,
+              sheet2,
+              category
+            );
+            processedData[category] = categoryData;
+          }
+        });
+      }
+
+      function getProductName(row) {
+        for (let i = 0; i < row.length; i++) {
+          if (
+            row[i] &&
+            typeof row[i] === "string" &&
+            (row[i].includes("Aminol") || row[i].includes("Special Generation"))
+          ) {
+            return row[i];
+          }
+        }
+        return row[1] || row[0] || "";
+      }
+
+      function generateCategoryData(productRow, sheet2, category) {
+        const result = [];
+
+        // Create headers
+        const headers = [
+          "ID",
+          "Product name",
+          "Engine oil",
+          "Passenger car motor oil (PCMO)",
+          "Məhsulun ID",
+          "Məhsulun adı",
+          "Spesifikasıyanın adı",
+          "Spesifikasıyanın tipi",
+          "Material",
+          "Xarakteristika",
+          "Ölçü vahidi",
+          "Miqdar",
+          "Material",
+          "Xarakteristika",
+        ];
+
+        // Add liter size columns
+        literSizes.forEach((size) => {
+          headers.push(
+            `${size}`,
+            `Miqdar`,
+            `Material`,
+            `Xarakteristika`,
+            `Ölçü vahidi`
+          );
+        });
+
+        result.push(headers);
+
+        // Get product info
+        const productId = productRow[0] || `AL/EO-0001`;
+        const productName = getProductName(productRow);
+        const engineOil = "Engine oil";
+        const pcmo = "Passenger car motor oil (PCMO)";
+
+        // Find related materials from Sheet2
+        const relatedMaterials = sheet2.filter((row, index) => {
+          if (index === 0) return false; // Skip header
+          const rowStr = row.join(" ").toLowerCase();
+          return (
+            rowStr.includes(productName.toLowerCase()) ||
+            productPatterns[category].some((pattern) =>
+              rowStr.includes(pattern)
+            )
+          );
+        });
+
+        // Create material specifications for each liter size
+        const materials = [
+          "Bidon",
+          "Qapaq",
+          "Etiket",
+          "Qutu",
+          "Palet",
+          "BE",
+          "CT",
+          "DS",
+          "SX",
+          "ZX",
+        ];
+
+        literSizes.forEach((literSize) => {
+          materials.forEach((material) => {
+            const materialRow = [
+              productId,
+              productName,
+              engineOil,
+              pcmo,
+              productId,
+              productName,
+              `${productName} ${literSize}`,
+              category.charAt(0).toUpperCase() + category.slice(1),
+              material,
+              getMaterialCharacteristic(material, literSize),
+              "adəd",
+              "1",
+            ];
+
+            // Add empty cells for additional material columns
+            materialRow.push(
+              material,
+              getMaterialCharacteristic(material, literSize)
+            );
+
+            // Add data for each liter size
+            literSizes.forEach((size) => {
+              if (size === literSize) {
+                materialRow.push(
+                  material,
+                  "1",
+                  material,
+                  getMaterialCharacteristic(material, size),
+                  "adəd"
+                );
+              } else {
+                materialRow.push("-", "-", "-", "-", "-");
+              }
+            });
+
+            result.push(materialRow);
+          });
+        });
+
+        return result;
+      }
+
+      function getMaterialCharacteristic(material, literSize) {
+        const characteristics = {
+          Bidon: `${literSize} Açıq Göy Aminol (öz istəhsal)`,
+          Qapaq: `Qırmızı ${literSize} (50/22 telescopic)`,
+          Etiket: `Aminol Special Generation SLG1 0W20 SP/GF-6A (BK-06)`,
+          Qutu: `Kıpaj Aminol ${literSize}`,
+          Palet: "1.14x1.14",
+          BE: "<Xarakteristika yoxdur>",
+          CT: "<Xarakteristika yoxdur>",
+          DS: "<Xarakteristika yoxdur>",
+          SX: "<Xarakteristika yoxdur>",
+          ZX: "<Xarakteristika yoxdur>",
+        };
+
+        return characteristics[material] || `${material} ${literSize}`;
+      }
+
+      function updateCategoryInfo() {
+        const categories = ["standart", "premium", "oem"];
+
+        categories.forEach((category) => {
+          const infoDiv = document.getElementById(category + "Info");
+          const productDiv = document.getElementById(category + "Product");
+
+          if (categoryProducts[category]) {
+            infoDiv.style.display = "block";
+            productDiv.textContent = categoryProducts[category];
+          } else {
+            infoDiv.style.display = "none";
+          }
+        });
+      }
+
+      function displayTable(tableId, data) {
+        const table = document.getElementById(tableId);
+        if (!data || data.length === 0) {
+          table.innerHTML =
+            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
+          return;
+        }
+
+        let html = "";
+        data.forEach((row, index) => {
+          html += "<tr>";
+          row.forEach((cell) => {
+            const tag = index === 0 ? "th" : "td";
+            const displayValue = processCell(cell);
+            html += `<${tag}>${displayValue}</${tag}>`;
+          });
+          html += "</tr>";
+        });
+
+        table.innerHTML = html;
+      }
+
+      function processCell(cell) {
+        if (cell === undefined || cell === null || cell === "") {
+          return "-";
+        }
+        if (cell.toString() === "99.99999") {
+          return "-";
+        }
+        return cell;
+      }
+
+      function showTab(tabName) {
+        const contents = document.querySelectorAll(".tab-content");
+        contents.forEach((content) => content.classList.remove("active"));
+
+        const tabs = document.querySelectorAll(".tab");
+        tabs.forEach((tab) => tab.classList.remove("active"));
+
+        document.getElementById(tabName).classList.add("active");
+        event.target.classList.add("active");
+      }
+
+      function showStatus(message, type) {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${type}`;
+
+        if (type === "success") {
+          setTimeout(() => {
+            statusDiv.textContent = "";
+            statusDiv.className = "status";
+          }, 5000);
+        }
+      }
+
+      function downloadExcel() {
+        if (!processedData.sheet1.length && !processedData.sheet2.length) {
+          showStatus("Əvvəlcə fayl yükləyin!", "error");
+          return;
+        }
+
+        try {
+          const wb = XLSX.utils.book_new();
+
+          // Add original sheets
+          if (processedData.sheet1.length > 0) {
+            const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
+            XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
+          }
+
+          if (processedData.sheet2.length > 0) {
+            const ws2 = XLSX.utils.aoa_to_sheet(processedData.sheet2);
+            XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
+          }
+
+          // Add categorized sheets
+          if (processedData.standart.length > 0) {
+            const ws3 = XLSX.utils.aoa_to_sheet(processedData.standart);
+            XLSX.utils.book_append_sheet(wb, ws3, "Standart");
+          }
+
+          if (processedData.premium.length > 0) {
+            const ws4 = XLSX.utils.aoa_to_sheet(processedData.premium);
+            XLSX.utils.book_append_sheet(wb, ws4, "Premium");
+          }
+
+          if (processedData.oem.length > 0) {
+            const ws5 = XLSX.utils.aoa_to_sheet(processedData.oem);
+            XLSX.utils.book_append_sheet(wb, ws5, "OEM");
+          }
+
+          XLSX.writeFile(wb, "Processed_Engine_Oil_Data.xlsx");
+          showStatus("Excel faylı uğurla yükləndi!", "success");
+        } catch (error) {
+          showStatus(
+            "Excel faylı yaradılarkən xəta: " + error.message,
+            "error"
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
