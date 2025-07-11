@@ -358,7 +358,6 @@
       let originalSheet1 = [];
       let originalSheet2 = [];
 
-      // Fixed pattern matching - case insensitive və Turkish characters
       const productPatterns = {
         oem: [
           "oem",
@@ -404,8 +403,7 @@
           "standart - ekonomik",
           "polimerli versiya / standart",
           "polimerli standart",
-          "çok ekonomik",
-          "müşteri onayı olmadan verilmemeli",
+          "Çok Ekonomik (Müşteri Onayı Olmadan Verilmemeli)",
         ],
       };
 
@@ -478,13 +476,11 @@
         categoryProducts.oem = "";
         let patternMatchResults = [];
 
-        // Her bir Sheet1 məhsulu üçün
         for (let i = 1; i < sheet1.length; i++) {
           const sheet1Row = sheet1[i];
-          const productName = sheet1Row[1];
-          if (!productName) continue;
+          const sheet1ProductName = sheet1Row[1];
+          if (!sheet1ProductName) continue;
 
-          // Sheet2-də uyğun məhsul tap
           let matchingSheet2Row = null;
           for (let j = 1; j < sheet2.length; j++) {
             const sheet2Row = sheet2[j];
@@ -493,13 +489,12 @@
 
             if (!sheet2ProductName) continue;
 
-            // Daha yaxşı matching
             if (
-              normalizeText(productName).includes(
+              normalizeText(sheet1ProductName).includes(
                 normalizeText(sheet2ProductName)
               ) ||
               normalizeText(sheet2ProductName).includes(
-                normalizeText(productName)
+                normalizeText(sheet1ProductName)
               )
             ) {
               matchingSheet2Row = sheet2Row;
@@ -508,32 +503,36 @@
           }
 
           if (matchingSheet2Row) {
+            const sheet2ProductName = matchingSheet2Row[1];
             const specificationType = matchingSheet2Row[3] || "";
 
-            // Bütün mətnləri birləşdir və kateqoriyaya ayır
             const combinedText = normalizeText(
-              productName + " " + specificationType
+              sheet1ProductName +
+                " " +
+                sheet2ProductName +
+                " " +
+                specificationType
             );
             const category = determineCategory(combinedText);
 
             if (category) {
               patternMatchResults.push({
-                product: productName,
+                sheet1Product: sheet1ProductName,
+                sheet2Product: sheet2ProductName,
                 specification: specificationType,
                 category: category,
                 combinedText: combinedText,
                 matchedPattern: getMatchedPattern(combinedText, category),
               });
 
-              // Hər kateqoriyada yalnız bir məhsul saxla
               if (!categoryProducts[category]) {
-                categoryProducts[category] = productName;
+                categoryProducts[category] = sheet2ProductName;
 
                 const categoryData = generateCategoryData(
                   sheet1Row,
                   matchingSheet2Row,
                   category,
-                  productName
+                  sheet2ProductName
                 );
 
                 processedData[category] = categoryData;
@@ -546,7 +545,6 @@
         updatePatternMatchResults(patternMatchResults);
       }
 
-      // Mətn normallaşdırma funksiyası
       function normalizeText(text) {
         if (!text) return "";
         return text
@@ -565,21 +563,18 @@
       }
 
       function determineCategory(normalizedText) {
-        // Əvvəlcə OEM yoxla (ən yüksək prioritet)
         for (let pattern of productPatterns.oem) {
           if (normalizedText.includes(normalizeText(pattern))) {
             return "oem";
           }
         }
 
-        // Sonra Premium yoxla
         for (let pattern of productPatterns.premium) {
           if (normalizedText.includes(normalizeText(pattern))) {
             return "premium";
           }
         }
 
-        // Ən sonda Standart yoxla
         for (let pattern of productPatterns.standart) {
           if (normalizedText.includes(normalizeText(pattern))) {
             return "standart";
@@ -589,7 +584,6 @@
         return null;
       }
 
-      // Hansı pattern-in match olduğunu göstər
       function getMatchedPattern(normalizedText, category) {
         for (let pattern of productPatterns[category]) {
           if (normalizedText.includes(normalizeText(pattern))) {
@@ -760,7 +754,7 @@
         `;
 
         debugContent.innerHTML = debugText;
-        debugDiv.style.display = "block";
+        debugDiv.style.display = "none";
       }
 
       function updatePatternMatchResults(patternResults) {
@@ -775,7 +769,8 @@
             .map(
               (result) => `
             <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-              <strong>Product:</strong> ${result.product}<br>
+              <strong>Sheet1 Product:</strong> ${result.sheet1Product}<br>
+              <strong>Sheet2 Product:</strong> ${result.sheet2Product}<br>
               <strong>Specification:</strong> ${result.specification}<br>
               <strong>Category:</strong> ${result.category}<br>
               <strong>Matched Pattern:</strong> ${result.matchedPattern}<br>
@@ -787,7 +782,7 @@
           patternContent.innerHTML = patternText;
         }
 
-        patternDiv.style.display = "block";
+        patternDiv.style.display = "none";
       }
 
       function displayTable(tableId, data) {
