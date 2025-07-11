@@ -190,6 +190,18 @@
         font-size: 0.9em;
         line-height: 1.4;
       }
+      .debug-info {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #ff9800;
+        font-size: 0.9em;
+      }
+      .debug-info h3 {
+        margin: 0 0 10px 0;
+        color: #ff9800;
+      }
     </style>
   </head>
   <body>
@@ -239,7 +251,8 @@
           <strong>Premium:</strong> ILSAC GF-6A, GF-6B, GF-5 və API SP, SN Plus
           keyfiyyət məhsulları
           <br />
-          <strong>OEM:</strong> 0W-20 SP/GF-6A yüksək keyfiyyət məhsulları
+          <strong>OEM:</strong> 0W-20 SP/GF-6A və Top Quality yüksək keyfiyyət
+          məhsulları
         </div>
       </div>
 
@@ -249,6 +262,11 @@
           📁 all_products.xlsx faylını seçin
         </label>
         <div class="status" id="status"></div>
+      </div>
+
+      <div id="debugInfo" class="debug-info" style="display: none">
+        <h3>Debug Info</h3>
+        <div id="debugContent"></div>
       </div>
 
       <div class="tabs">
@@ -324,9 +342,9 @@
       let originalSheet1 = [];
       let originalSheet2 = [];
 
-      // Product identification patterns
+      // Product identification patterns - Top Quality-ni OEM-ə yönləndirmək üçün
       const productPatterns = {
-        standart: ["standart", "standard"],
+        standart: ["standart", "standard", "sl", "cf", "api cf", "api sl"],
         premium: [
           "premium",
           "ilsac",
@@ -335,8 +353,19 @@
           "gf-5",
           "api sp",
           "sn plus",
+          "sp/gf-6a",
+          "sp/gf-6b",
+          "sn/gf-5",
+          "special generation",
         ],
-        oem: ["oem", "0w-20", "sp/gf-6a", "top quality"],
+        oem: [
+          "oem",
+          "0w-20",
+          "0w20",
+          "top quality", // Top Quality-ni OEM-ə əlavə etdik
+          "top tier",
+          "original equipment",
+        ],
       };
 
       // Liter sizes for columns
@@ -408,72 +437,134 @@
         categoryProducts.premium = "";
         categoryProducts.oem = "";
 
-        // Find product rows from Sheet1
-        const productRows = sheet1.filter((row, index) => {
-          if (index === 0) return false; // Skip header
-          return row.some(
-            (cell) =>
-              cell &&
-              typeof cell === "string" &&
-              (cell.includes("Aminol") || cell.includes("Special Generation"))
-          );
+        console.log("Sheet1 data:", sheet1);
+        console.log("Sheet2 data:", sheet2);
+
+        // Sheet2-dən product name-ləri götürək
+        const sheet2Products = [];
+        sheet2.forEach((row, index) => {
+          if (index === 0) return; // Header-i skip et
+
+          // Məhsul adı sütununu tap (adətən 2-ci sütundur)
+          const productName = row[1]; // Məhsulun adı
+          if (productName && typeof productName === "string") {
+            sheet2Products.push({
+              name: productName,
+              fullRow: row,
+              index: index,
+            });
+          }
         });
 
-        // Process each product
-        productRows.forEach((productRow) => {
-          const productName = getProductName(productRow);
-          const productStr = productRow.join(" ").toLowerCase();
+        console.log("Sheet2 products:", sheet2Products);
 
-          let category = null;
+        // Sheet1-dən məhsul məlumatlarını götürək
+        const sheet1Products = [];
+        sheet1.forEach((row, index) => {
+          if (index === 0) return; // Header-i skip et
 
-          // Determine category
-          if (
-            productPatterns.premium.some((pattern) =>
-              productStr.includes(pattern)
-            )
-          ) {
-            category = "premium";
-          } else if (
-            productPatterns.oem.some((pattern) => productStr.includes(pattern))
-          ) {
-            category = "oem";
-          } else if (
-            productPatterns.standart.some((pattern) =>
-              productStr.includes(pattern)
-            )
-          ) {
-            category = "standart";
+          // Product name sütununu tap (adətən 2-ci sütundur)
+          const productName = row[1]; // Product name
+          if (productName && typeof productName === "string") {
+            sheet1Products.push({
+              name: productName,
+              fullRow: row,
+              index: index,
+            });
           }
+        });
 
-          if (category) {
-            if (!categoryProducts[category]) {
-              categoryProducts[category] = productName;
-            }
+        console.log("Sheet1 products:", sheet1Products);
 
-            const categoryData = generateCategoryData(
-              productRow,
-              sheet2,
-              category
+        // İndi sheet1 və sheet2-ni product name-ə görə match edək
+        sheet1Products.forEach((sheet1Product) => {
+          const productName = sheet1Product.name.toLowerCase();
+
+          // Sheet2-də eyni məhsulu tap
+          const matchingSheet2Product = sheet2Products.find((sheet2Product) => {
+            return (
+              sheet2Product.name
+                .toLowerCase()
+                .includes(productName.toLowerCase()) ||
+              productName.includes(sheet2Product.name.toLowerCase())
             );
-            processedData[category] = categoryData;
+          });
+
+          if (matchingSheet2Product) {
+            // Kateqoriya müəyyən et
+            let category = determineCategory(
+              sheet1Product.name,
+              matchingSheet2Product.name
+            );
+
+            if (category) {
+              console.log(
+                `Found product: ${sheet1Product.name} in category: ${category}`
+              );
+
+              if (!categoryProducts[category]) {
+                categoryProducts[category] = sheet1Product.name;
+              }
+
+              const categoryData = generateCategoryData(
+                sheet1Product.fullRow,
+                matchingSheet2Product.fullRow,
+                category,
+                sheet1Product.name
+              );
+              processedData[category] = categoryData;
+            }
           }
         });
+
+        // Debug info göstər
+        updateDebugInfo(sheet1Products, sheet2Products);
       }
 
-      function getProductName(row) {
-        for (let i = 0; i < row.length; i++) {
-          if (
-            row[i] &&
-            typeof row[i] === "string" &&
-            (row[i].includes("Aminol") || row[i].includes("Special Generation"))
-          ) {
-            return row[i];
+      function determineCategory(sheet1ProductName, sheet2ProductName) {
+        const combinedText = (
+          sheet1ProductName +
+          " " +
+          sheet2ProductName
+        ).toLowerCase();
+
+        console.log("Determining category for:", combinedText);
+
+        // Əvvəlcə OEM-i yoxlayaq (Top Quality-ni tapmaq üçün)
+        for (let pattern of productPatterns.oem) {
+          if (combinedText.includes(pattern)) {
+            console.log("Found OEM pattern:", pattern);
+            return "oem";
           }
         }
-        return row[1] || row[0] || "";
+
+        // Sonra Premium-u yoxlayaq
+        for (let pattern of productPatterns.premium) {
+          if (combinedText.includes(pattern)) {
+            console.log("Found premium pattern:", pattern);
+            return "premium";
+          }
+        }
+
+        // Standart yoxla
+        for (let pattern of productPatterns.standart) {
+          if (combinedText.includes(pattern)) {
+            console.log("Found standart pattern:", pattern);
+            return "standart";
+          }
+        }
+
+        // Heç bir pattern tapılmadısa, standart kimi qəbul et
+        console.log("No pattern found, defaulting to standart");
+        return "standart";
       }
 
-      function generateCategoryData(productRow, sheet2, category) {
+      function generateCategoryData(
+        sheet1Row,
+        sheet2Row,
+        category,
+        productName
+      ) {
         const result = [];
 
         // Create headers
@@ -508,22 +599,13 @@
         result.push(headers);
 
         // Get product info
-        const productId = productRow[0] || `AL/EO-0001`;
-        const productName = getProductName(productRow);
+        const productId = sheet1Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
 
-        // Find related materials from Sheet2
-        const relatedMaterials = sheet2.filter((row, index) => {
-          if (index === 0) return false; // Skip header
-          const rowStr = row.join(" ").toLowerCase();
-          return (
-            rowStr.includes(productName.toLowerCase()) ||
-            productPatterns[category].some((pattern) =>
-              rowStr.includes(pattern)
-            )
-          );
-        });
+        // Sheet2-dən material məlumatlarını götür
+        const materialFromSheet2 = sheet2Row[4] || "Bidon"; // Material column
+        const characteristicFromSheet2 = sheet2Row[5] || ""; // Xarakteristika column
 
         // Create material specifications for each liter size
         const materials = [
@@ -549,9 +631,12 @@
               productId,
               productName,
               `${productName} ${literSize}`,
-              category.charAt(0).toUpperCase() + category.slice(1),
+              // OEM kateqoriyası üçün "Top Quality" göstər
+              category === "oem"
+                ? "Top Quality"
+                : category.charAt(0).toUpperCase() + category.slice(1),
               material,
-              getMaterialCharacteristic(material, literSize),
+              getMaterialCharacteristic(material, literSize, productName),
               "adəd",
               "1",
             ];
@@ -559,7 +644,7 @@
             // Add empty cells for additional material columns
             materialRow.push(
               material,
-              getMaterialCharacteristic(material, literSize)
+              getMaterialCharacteristic(material, literSize, productName)
             );
 
             // Add data for each liter size
@@ -569,7 +654,7 @@
                   material,
                   "1",
                   material,
-                  getMaterialCharacteristic(material, size),
+                  getMaterialCharacteristic(material, size, productName),
                   "adəd"
                 );
               } else {
@@ -584,11 +669,11 @@
         return result;
       }
 
-      function getMaterialCharacteristic(material, literSize) {
+      function getMaterialCharacteristic(material, literSize, productName) {
         const characteristics = {
-          Bidon: `${literSize} Açıq Göy Aminol (öz istəhsal)`,
+          Bidon: `${literSize} Açıq Göy Aminol (öz istehsal)`,
           Qapaq: `Qırmızı ${literSize} (50/22 telescopic)`,
-          Etiket: `Aminol Special Generation SLG1 0W20 SP/GF-6A (BK-06)`,
+          Etiket: `${productName} (BK-06)`,
           Qutu: `Kıpaj Aminol ${literSize}`,
           Palet: "1.14x1.14",
           BE: "<Xarakteristika yoxdur>",
@@ -615,6 +700,27 @@
             infoDiv.style.display = "none";
           }
         });
+      }
+
+      function updateDebugInfo(sheet1Products, sheet2Products) {
+        const debugDiv = document.getElementById("debugInfo");
+        const debugContent = document.getElementById("debugContent");
+
+        let debugText = `
+          <strong>Sheet1 Products (${sheet1Products.length}):</strong><br>
+          ${sheet1Products.map((p) => `- ${p.name}`).join("<br>")}<br><br>
+          
+          <strong>Sheet2 Products (${sheet2Products.length}):</strong><br>
+          ${sheet2Products.map((p) => `- ${p.name}`).join("<br>")}<br><br>
+          
+          <strong>Categorized Products:</strong><br>
+          Standart: ${categoryProducts.standart || "None"}<br>
+          Premium: ${categoryProducts.premium || "None"}<br>
+          OEM: ${categoryProducts.oem || "None"}
+        `;
+
+        debugContent.innerHTML = debugText;
+        debugDiv.style.display = "block";
       }
 
       function displayTable(tableId, data) {
