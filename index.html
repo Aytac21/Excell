@@ -202,6 +202,17 @@
         margin: 0 0 10px 0;
         color: #ff9800;
       }
+      .pattern-match {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #9c27b0;
+      }
+      .pattern-match h3 {
+        margin: 0 0 10px 0;
+        color: #9c27b0;
+      }
     </style>
   </head>
   <body>
@@ -267,6 +278,11 @@
       <div id="debugInfo" class="debug-info" style="display: none">
         <h3>Debug Info</h3>
         <div id="debugContent"></div>
+      </div>
+
+      <div id="patternMatch" class="pattern-match" style="display: none">
+        <h3>Pattern Matching Results</h3>
+        <div id="patternContent"></div>
       </div>
 
       <div class="tabs">
@@ -342,9 +358,17 @@
       let originalSheet1 = [];
       let originalSheet2 = [];
 
-      // Product identification patterns - Top Quality-ni OEM-ə yönləndirmək üçün
+      // Fixed pattern matching - case insensitive və Turkish characters
       const productPatterns = {
-        standart: ["standart", "standard", "sl", "cf", "api cf", "api sl"],
+        oem: [
+          "oem",
+          "0w-20",
+          "0w20",
+          "top quality",
+          "top tier",
+          "original equipment",
+          "premium - top quality",
+        ],
         premium: [
           "premium",
           "ilsac",
@@ -357,18 +381,34 @@
           "sp/gf-6b",
           "sn/gf-5",
           "special generation",
+          "premium - standart",
+          "standart - premium",
+          "standart alternativ",
+          "full premium",
+          "polimerli versiya / premium",
+          "top premium",
         ],
-        oem: [
-          "oem",
-          "0w-20",
-          "0w20",
-          "top quality", // Top Quality-ni OEM-ə əlavə etdik
-          "top tier",
-          "original equipment",
+        standart: [
+          "standart",
+          "standard",
+          "sl",
+          "cf",
+          "api cf",
+          "api sl",
+          "orjinal",
+          "ekonomik",
+          "ekonomik alternativ",
+          "katık yok",
+          "ekonomik - standart",
+          "ekonomik - standart - premium",
+          "standart - ekonomik",
+          "polimerli versiya / standart",
+          "polimerli standart",
+          "çok ekonomik",
+          "müşteri onayı olmadan verilmemeli",
         ],
       };
 
-      // Liter sizes for columns
       const literSizes = ["1L", "1.5L", "4L", "5L", "6L", "7L", "10L", "18L"];
 
       document
@@ -436,127 +476,127 @@
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
+        let patternMatchResults = [];
 
-        console.log("Sheet1 data:", sheet1);
-        console.log("Sheet2 data:", sheet2);
+        // Her bir Sheet1 məhsulu üçün
+        for (let i = 1; i < sheet1.length; i++) {
+          const sheet1Row = sheet1[i];
+          const productName = sheet1Row[1];
+          if (!productName) continue;
 
-        // Sheet2-dən product name-ləri götürək
-        const sheet2Products = [];
-        sheet2.forEach((row, index) => {
-          if (index === 0) return; // Header-i skip et
+          // Sheet2-də uyğun məhsul tap
+          let matchingSheet2Row = null;
+          for (let j = 1; j < sheet2.length; j++) {
+            const sheet2Row = sheet2[j];
+            const sheet2ProductName = sheet2Row[1];
+            const sheet2SpecType = sheet2Row[3] || "";
 
-          // Məhsul adı sütununu tap (adətən 2-ci sütundur)
-          const productName = row[1]; // Məhsulun adı
-          if (productName && typeof productName === "string") {
-            sheet2Products.push({
-              name: productName,
-              fullRow: row,
-              index: index,
-            });
-          }
-        });
+            if (!sheet2ProductName) continue;
 
-        console.log("Sheet2 products:", sheet2Products);
-
-        // Sheet1-dən məhsul məlumatlarını götürək
-        const sheet1Products = [];
-        sheet1.forEach((row, index) => {
-          if (index === 0) return; // Header-i skip et
-
-          // Product name sütununu tap (adətən 2-ci sütundur)
-          const productName = row[1]; // Product name
-          if (productName && typeof productName === "string") {
-            sheet1Products.push({
-              name: productName,
-              fullRow: row,
-              index: index,
-            });
-          }
-        });
-
-        console.log("Sheet1 products:", sheet1Products);
-
-        // İndi sheet1 və sheet2-ni product name-ə görə match edək
-        sheet1Products.forEach((sheet1Product) => {
-          const productName = sheet1Product.name.toLowerCase();
-
-          // Sheet2-də eyni məhsulu tap
-          const matchingSheet2Product = sheet2Products.find((sheet2Product) => {
-            return (
-              sheet2Product.name
-                .toLowerCase()
-                .includes(productName.toLowerCase()) ||
-              productName.includes(sheet2Product.name.toLowerCase())
-            );
-          });
-
-          if (matchingSheet2Product) {
-            // Kateqoriya müəyyən et
-            let category = determineCategory(
-              sheet1Product.name,
-              matchingSheet2Product.name
-            );
-
-            if (category) {
-              console.log(
-                `Found product: ${sheet1Product.name} in category: ${category}`
-              );
-
-              if (!categoryProducts[category]) {
-                categoryProducts[category] = sheet1Product.name;
-              }
-
-              const categoryData = generateCategoryData(
-                sheet1Product.fullRow,
-                matchingSheet2Product.fullRow,
-                category,
-                sheet1Product.name
-              );
-              processedData[category] = categoryData;
+            // Daha yaxşı matching
+            if (
+              normalizeText(productName).includes(
+                normalizeText(sheet2ProductName)
+              ) ||
+              normalizeText(sheet2ProductName).includes(
+                normalizeText(productName)
+              )
+            ) {
+              matchingSheet2Row = sheet2Row;
+              break;
             }
           }
-        });
 
-        // Debug info göstər
-        updateDebugInfo(sheet1Products, sheet2Products);
+          if (matchingSheet2Row) {
+            const specificationType = matchingSheet2Row[3] || "";
+
+            // Bütün mətnləri birləşdir və kateqoriyaya ayır
+            const combinedText = normalizeText(
+              productName + " " + specificationType
+            );
+            const category = determineCategory(combinedText);
+
+            if (category) {
+              patternMatchResults.push({
+                product: productName,
+                specification: specificationType,
+                category: category,
+                combinedText: combinedText,
+                matchedPattern: getMatchedPattern(combinedText, category),
+              });
+
+              // Hər kateqoriyada yalnız bir məhsul saxla
+              if (!categoryProducts[category]) {
+                categoryProducts[category] = productName;
+
+                const categoryData = generateCategoryData(
+                  sheet1Row,
+                  matchingSheet2Row,
+                  category,
+                  productName
+                );
+
+                processedData[category] = categoryData;
+              }
+            }
+          }
+        }
+
+        updateDebugInfo(sheet1, sheet2, patternMatchResults);
+        updatePatternMatchResults(patternMatchResults);
       }
 
-      function determineCategory(sheet1ProductName, sheet2ProductName) {
-        const combinedText = (
-          sheet1ProductName +
-          " " +
-          sheet2ProductName
-        ).toLowerCase();
+      // Mətn normallaşdırma funksiyası
+      function normalizeText(text) {
+        if (!text) return "";
+        return text
+          .toString()
+          .toLowerCase()
+          .replace(/ğ/g, "g")
+          .replace(/ü/g, "u")
+          .replace(/ş/g, "s")
+          .replace(/ı/g, "i")
+          .replace(/ö/g, "o")
+          .replace(/ç/g, "c")
+          .replace(/ə/g, "e")
+          .replace(/[^\w\s-]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
 
-        console.log("Determining category for:", combinedText);
-
-        // Əvvəlcə OEM-i yoxlayaq (Top Quality-ni tapmaq üçün)
+      function determineCategory(normalizedText) {
+        // Əvvəlcə OEM yoxla (ən yüksək prioritet)
         for (let pattern of productPatterns.oem) {
-          if (combinedText.includes(pattern)) {
-            console.log("Found OEM pattern:", pattern);
+          if (normalizedText.includes(normalizeText(pattern))) {
             return "oem";
           }
         }
 
-        // Sonra Premium-u yoxlayaq
+        // Sonra Premium yoxla
         for (let pattern of productPatterns.premium) {
-          if (combinedText.includes(pattern)) {
-            console.log("Found premium pattern:", pattern);
+          if (normalizedText.includes(normalizeText(pattern))) {
             return "premium";
           }
         }
 
-        // Standart yoxla
+        // Ən sonda Standart yoxla
         for (let pattern of productPatterns.standart) {
-          if (combinedText.includes(pattern)) {
-            console.log("Found standart pattern:", pattern);
+          if (normalizedText.includes(normalizeText(pattern))) {
             return "standart";
           }
         }
 
-        // Heç bir pattern tapılmadısa, standart kimi qəbul et
-        console.log("No pattern found, defaulting to standart");
-        return "standart";
+        return null;
+      }
+
+      // Hansı pattern-in match olduğunu göstər
+      function getMatchedPattern(normalizedText, category) {
+        for (let pattern of productPatterns[category]) {
+          if (normalizedText.includes(normalizeText(pattern))) {
+            return pattern;
+          }
+        }
+        return "unknown";
       }
 
       function generateCategoryData(
@@ -567,7 +607,6 @@
       ) {
         const result = [];
 
-        // Create headers
         const headers = [
           "ID",
           "Product name",
@@ -585,7 +624,6 @@
           "Xarakteristika",
         ];
 
-        // Add liter size columns
         literSizes.forEach((size) => {
           headers.push(
             `${size}`,
@@ -598,16 +636,10 @@
 
         result.push(headers);
 
-        // Get product info
         const productId = sheet1Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
 
-        // Sheet2-dən material məlumatlarını götür
-        const materialFromSheet2 = sheet2Row[4] || "Bidon"; // Material column
-        const characteristicFromSheet2 = sheet2Row[5] || ""; // Xarakteristika column
-
-        // Create material specifications for each liter size
         const materials = [
           "Bidon",
           "Qapaq",
@@ -631,7 +663,6 @@
               productId,
               productName,
               `${productName} ${literSize}`,
-              // OEM kateqoriyası üçün "Top Quality" göstər
               category === "oem"
                 ? "Top Quality"
                 : category.charAt(0).toUpperCase() + category.slice(1),
@@ -641,13 +672,11 @@
               "1",
             ];
 
-            // Add empty cells for additional material columns
             materialRow.push(
               material,
               getMaterialCharacteristic(material, literSize, productName)
             );
 
-            // Add data for each liter size
             literSizes.forEach((size) => {
               if (size === literSize) {
                 materialRow.push(
@@ -702,25 +731,63 @@
         });
       }
 
-      function updateDebugInfo(sheet1Products, sheet2Products) {
+      function updateDebugInfo(sheet1, sheet2, patternResults) {
         const debugDiv = document.getElementById("debugInfo");
         const debugContent = document.getElementById("debugContent");
 
         let debugText = `
-          <strong>Sheet1 Products (${sheet1Products.length}):</strong><br>
-          ${sheet1Products.map((p) => `- ${p.name}`).join("<br>")}<br><br>
+          <strong>Sheet1 Products (${sheet1.length - 1} rows):</strong><br>
+          ${sheet1
+            .slice(1, Math.min(6, sheet1.length))
+            .map((row, i) => `${i + 1}. ${row[1] || "No name"}`)
+            .join("<br>")}<br><br>
           
-          <strong>Sheet2 Products (${sheet2Products.length}):</strong><br>
-          ${sheet2Products.map((p) => `- ${p.name}`).join("<br>")}<br><br>
+          <strong>Sheet2 Products (${sheet2.length - 1} rows):</strong><br>
+          ${sheet2
+            .slice(1, Math.min(6, sheet2.length))
+            .map(
+              (row, i) =>
+                `${i + 1}. ${row[1] || "No name"} - ${row[3] || "No type"}`
+            )
+            .join("<br>")}<br><br>
           
           <strong>Categorized Products:</strong><br>
           Standart: ${categoryProducts.standart || "None"}<br>
           Premium: ${categoryProducts.premium || "None"}<br>
-          OEM: ${categoryProducts.oem || "None"}
+          OEM: ${categoryProducts.oem || "None"}<br><br>
+          
+          <strong>Pattern Matches Found:</strong> ${patternResults.length}
         `;
 
         debugContent.innerHTML = debugText;
         debugDiv.style.display = "block";
+      }
+
+      function updatePatternMatchResults(patternResults) {
+        const patternDiv = document.getElementById("patternMatch");
+        const patternContent = document.getElementById("patternContent");
+
+        if (patternResults.length === 0) {
+          patternContent.innerHTML =
+            "<p>Heç bir pattern match tapılmadı. Məlumat strukturunu yoxlayın.</p>";
+        } else {
+          let patternText = patternResults
+            .map(
+              (result) => `
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+              <strong>Product:</strong> ${result.product}<br>
+              <strong>Specification:</strong> ${result.specification}<br>
+              <strong>Category:</strong> ${result.category}<br>
+              <strong>Matched Pattern:</strong> ${result.matchedPattern}<br>
+              <strong>Combined Text:</strong> ${result.combinedText}
+            </div>
+          `
+            )
+            .join("");
+          patternContent.innerHTML = patternText;
+        }
+
+        patternDiv.style.display = "block";
       }
 
       function displayTable(tableId, data) {
@@ -788,7 +855,6 @@
         try {
           const wb = XLSX.utils.book_new();
 
-          // Add original sheets
           if (processedData.sheet1.length > 0) {
             const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
             XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
@@ -799,7 +865,6 @@
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
           }
 
-          // Add categorized sheets
           if (processedData.standart.length > 0) {
             const ws3 = XLSX.utils.aoa_to_sheet(processedData.standart);
             XLSX.utils.book_append_sheet(wb, ws3, "Standart");
