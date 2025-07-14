@@ -367,6 +367,7 @@
           "top tier",
           "original equipment",
           "premium - top quality",
+          "premium-top quality",
         ],
         premium: [
           "premium",
@@ -381,10 +382,13 @@
           "sn/gf-5",
           "special generation",
           "premium - standart",
+          "premium-standart",
           "standart - premium",
+          "standart-premium",
           "standart alternativ",
           "full premium",
           "polimerli versiya / premium",
+          "polimerli versiya/premium",
           "top premium",
         ],
         standart: [
@@ -397,13 +401,20 @@
           "orjinal",
           "ekonomik",
           "ekonomik alternativ",
-          "katık yok",
+          "ekonomik alternativ (katik yok)",
+          "katik yok",
           "ekonomik - standart",
+          "ekonomik-standart",
           "ekonomik - standart - premium",
+          "ekonomik-standart-premium",
           "standart - ekonomik",
+          "standart-ekonomik",
           "polimerli versiya / standart",
+          "polimerli versiya/standart",
           "polimerli standart",
-          "Çok Ekonomik (Müşteri Onayı Olmadan Verilmemeli)",
+          "cok ekonomik (musteri onayi olmadan verilmemeli)",
+          "cok ekonomik",
+          "musteri onayi olmadan verilmemeli",
         ],
       };
 
@@ -476,12 +487,54 @@
         categoryProducts.oem = "";
         let patternMatchResults = [];
 
+        // Initialize category data with headers
+        const headers = [
+          "ID",
+          "Product name",
+          "Engine oil",
+          "Passenger car motor oil (PCMO)",
+          "Məhsulun ID",
+          "Məhsulun adı",
+          "Spesifikasıyanın adı",
+          "Spesifikasıyanın tipi",
+          "Material",
+          "Xarakteristika",
+          "Ölçü vahidi",
+          "Miqdar",
+          "Material",
+          "Xarakteristika",
+        ];
+
+        literSizes.forEach((size) => {
+          headers.push(
+            `${size}`,
+            `Miqdar`,
+            `Material`,
+            `Xarakteristika`,
+            `Ölçü vahidi`
+          );
+        });
+
+        // Set headers for each category
+        processedData.standart.push(headers);
+        processedData.premium.push(headers);
+        processedData.oem.push(headers);
+
+        // Track processed products to avoid duplicates
+        const processedProducts = {
+          standart: new Set(),
+          premium: new Set(),
+          oem: new Set(),
+        };
+
+        // Bütün Sheet1 məhsulları üçün
         for (let i = 1; i < sheet1.length; i++) {
           const sheet1Row = sheet1[i];
           const sheet1ProductName = sheet1Row[1];
           if (!sheet1ProductName) continue;
 
-          let matchingSheet2Row = null;
+          // Sheet2-də uyğun məhsul tap
+          let matchingSheet2Rows = [];
           for (let j = 1; j < sheet2.length; j++) {
             const sheet2Row = sheet2[j];
             const sheet2ProductName = sheet2Row[1];
@@ -489,6 +542,7 @@
 
             if (!sheet2ProductName) continue;
 
+            // Məhsul adları arasında oxşarlıq yoxla
             if (
               normalizeText(sheet1ProductName).includes(
                 normalizeText(sheet2ProductName)
@@ -497,14 +551,14 @@
                 normalizeText(sheet1ProductName)
               )
             ) {
-              matchingSheet2Row = sheet2Row;
-              break;
+              matchingSheet2Rows.push(sheet2Row);
             }
           }
 
-          if (matchingSheet2Row) {
-            const sheet2ProductName = matchingSheet2Row[1];
-            const specificationType = matchingSheet2Row[3] || "";
+          // Hər bir uyğun Sheet2 sətiri üçün kateqoriya təyin et
+          matchingSheet2Rows.forEach((sheet2Row) => {
+            const sheet2ProductName = sheet2Row[1];
+            const specificationType = sheet2Row[3] || "";
 
             const combinedText = normalizeText(
               sheet1ProductName +
@@ -513,6 +567,7 @@
                 " " +
                 specificationType
             );
+
             const category = determineCategory(combinedText);
 
             if (category) {
@@ -525,26 +580,104 @@
                 matchedPattern: getMatchedPattern(combinedText, category),
               });
 
-              if (!categoryProducts[category]) {
-                categoryProducts[category] = sheet2ProductName;
+              // Check if this product is already processed for this category
+              const productKey = `${sheet1ProductName}_${sheet2ProductName}`;
+              if (!processedProducts[category].has(productKey)) {
+                processedProducts[category].add(productKey);
 
-                const categoryData = generateCategoryData(
+                // Set category product name if not set
+                if (!categoryProducts[category]) {
+                  categoryProducts[category] = sheet2ProductName;
+                }
+
+                // Generate category data for this product
+                const categoryData = generateCategoryDataRows(
                   sheet1Row,
-                  matchingSheet2Row,
+                  sheet2Row,
                   category,
                   sheet2ProductName
                 );
 
-                processedData[category] = categoryData;
+                // Append to existing category data (skip headers)
+                processedData[category].push(...categoryData);
               }
             }
-          }
+          });
         }
 
         updateDebugInfo(sheet1, sheet2, patternMatchResults);
         updatePatternMatchResults(patternMatchResults);
       }
 
+      // New function to generate only the data rows (without headers)
+      function generateCategoryDataRows(
+        sheet1Row,
+        sheet2Row,
+        category,
+        productName
+      ) {
+        const result = [];
+        const productId = sheet1Row[0] || `AL/EO-0001`;
+        const engineOil = "Engine oil";
+        const pcmo = "Passenger car motor oil (PCMO)";
+
+        const materials = [
+          "Bidon",
+          "Qapaq",
+          "Etiket",
+          "Qutu",
+          "Palet",
+          "BE",
+          "CT",
+          "DS",
+          "SX",
+          "ZX",
+        ];
+
+        literSizes.forEach((literSize) => {
+          materials.forEach((material) => {
+            const materialRow = [
+              productId,
+              productName,
+              engineOil,
+              pcmo,
+              productId,
+              productName,
+              `${productName} ${literSize}`,
+              category === "oem"
+                ? "Top Quality"
+                : category.charAt(0).toUpperCase() + category.slice(1),
+              material,
+              getMaterialCharacteristic(material, literSize, productName),
+              "adəd",
+              "1",
+            ];
+
+            materialRow.push(
+              material,
+              getMaterialCharacteristic(material, literSize, productName)
+            );
+
+            literSizes.forEach((size) => {
+              if (size === literSize) {
+                materialRow.push(
+                  material,
+                  "1",
+                  material,
+                  getMaterialCharacteristic(material, size, productName),
+                  "adəd"
+                );
+              } else {
+                materialRow.push("-", "-", "-", "-", "-");
+              }
+            });
+
+            result.push(materialRow);
+          });
+        });
+
+        return result;
+      }
       function normalizeText(text) {
         if (!text) return "";
         return text
@@ -563,30 +696,43 @@
       }
 
       function determineCategory(normalizedText) {
+        console.log("Checking text:", normalizedText);
+
+        // Əvvəlcə OEM yoxla (ən spesifik)
         for (let pattern of productPatterns.oem) {
-          if (normalizedText.includes(normalizeText(pattern))) {
+          const normalizedPattern = normalizeText(pattern);
+          if (normalizedText.includes(normalizedPattern)) {
+            console.log("OEM pattern matched:", pattern);
             return "oem";
           }
         }
 
+        // Sonra Premium yoxla
         for (let pattern of productPatterns.premium) {
-          if (normalizedText.includes(normalizeText(pattern))) {
+          const normalizedPattern = normalizeText(pattern);
+          if (normalizedText.includes(normalizedPattern)) {
+            console.log("Premium pattern matched:", pattern);
             return "premium";
           }
         }
 
+        // Sonda Standart yoxla (ən ümumi)
         for (let pattern of productPatterns.standart) {
-          if (normalizedText.includes(normalizeText(pattern))) {
+          const normalizedPattern = normalizeText(pattern);
+          if (normalizedText.includes(normalizedPattern)) {
+            console.log("Standart pattern matched:", pattern);
             return "standart";
           }
         }
 
+        console.log("No pattern matched for:", normalizedText);
         return null;
       }
 
       function getMatchedPattern(normalizedText, category) {
         for (let pattern of productPatterns[category]) {
-          if (normalizedText.includes(normalizeText(pattern))) {
+          const normalizedPattern = normalizeText(pattern);
+          if (normalizedText.includes(normalizedPattern)) {
             return pattern;
           }
         }
@@ -730,31 +876,30 @@
         const debugContent = document.getElementById("debugContent");
 
         let debugText = `
-          <strong>Sheet1 Products (${sheet1.length - 1} rows):</strong><br>
-          ${sheet1
-            .slice(1, Math.min(6, sheet1.length))
-            .map((row, i) => `${i + 1}. ${row[1] || "No name"}`)
-            .join("<br>")}<br><br>
-          
-          <strong>Sheet2 Products (${sheet2.length - 1} rows):</strong><br>
-          ${sheet2
-            .slice(1, Math.min(6, sheet2.length))
-            .map(
-              (row, i) =>
-                `${i + 1}. ${row[1] || "No name"} - ${row[3] || "No type"}`
-            )
-            .join("<br>")}<br><br>
-          
-          <strong>Categorized Products:</strong><br>
-          Standart: ${categoryProducts.standart || "None"}<br>
-          Premium: ${categoryProducts.premium || "None"}<br>
-          OEM: ${categoryProducts.oem || "None"}<br><br>
-          
-          <strong>Pattern Matches Found:</strong> ${patternResults.length}
-        `;
+    <strong>Sheet1 Products (${sheet1.length - 1} rows):</strong><br>
+    ${sheet1
+      .slice(1, Math.min(6, sheet1.length))
+      .map((row, i) => `${i + 1}. ${row[1] || "No name"}`)
+      .join("<br>")}<br><br>
+    
+    <strong>Sheet2 Products (${sheet2.length - 1} rows):</strong><br>
+    ${sheet2
+      .slice(1, Math.min(6, sheet2.length))
+      .map(
+        (row, i) => `${i + 1}. ${row[1] || "No name"} - ${row[3] || "No type"}`
+      )
+      .join("<br>")}<br><br>
+    
+    <strong>Categorized Products:</strong><br>
+    Standart: ${categoryProducts.standart || "None"}<br>
+    Premium: ${categoryProducts.premium || "None"}<br>
+    OEM: ${categoryProducts.oem || "None"}<br><br>
+    
+    <strong>Pattern Matches Found:</strong> ${patternResults.length}
+  `;
 
         debugContent.innerHTML = debugText;
-        debugDiv.style.display = "none";
+        debugDiv.style.display = "block"; // Debug məlumatını göstər
       }
 
       function updatePatternMatchResults(patternResults) {
@@ -768,21 +913,21 @@
           let patternText = patternResults
             .map(
               (result) => `
-            <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-              <strong>Sheet1 Product:</strong> ${result.sheet1Product}<br>
-              <strong>Sheet2 Product:</strong> ${result.sheet2Product}<br>
-              <strong>Specification:</strong> ${result.specification}<br>
-              <strong>Category:</strong> ${result.category}<br>
-              <strong>Matched Pattern:</strong> ${result.matchedPattern}<br>
-              <strong>Combined Text:</strong> ${result.combinedText}
-            </div>
-          `
+        <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+          <strong>Sheet1 Product:</strong> ${result.sheet1Product}<br>
+          <strong>Sheet2 Product:</strong> ${result.sheet2Product}<br>
+          <strong>Specification:</strong> ${result.specification}<br>
+          <strong>Category:</strong> ${result.category}<br>
+          <strong>Matched Pattern:</strong> ${result.matchedPattern}<br>
+          <strong>Combined Text:</strong> ${result.combinedText}
+        </div>
+      `
             )
             .join("");
           patternContent.innerHTML = patternText;
         }
 
-        patternDiv.style.display = "none";
+        patternDiv.style.display = "block"; // Pattern nəticələrini göstər
       }
 
       function displayTable(tableId, data) {
