@@ -358,7 +358,6 @@
       let originalSheet1 = [];
       let originalSheet2 = [];
 
-      // İstifadəçi tərəfindən verilən spesifikasiya açar sözləri
       const productPatterns = {
         oem: [
           "oem",
@@ -420,53 +419,70 @@
       };
 
       const literSizes = ["1L", "1.5L", "4L", "5L", "6L", "7L", "10L", "18L"];
+      const materials = [
+        "Bidon",
+        "Qapaq",
+        "Etiket",
+        "Qutu",
+        "Palet",
+        "BE",
+        "CT",
+        "DS",
+        "SX",
+        "ZX",
+      ];
 
       document
         .getElementById("fileInput")
         .addEventListener("change", handleFile);
 
+      function sheetToArrayOfArrays(sheet) {
+        const result = [];
+        if (!sheet || !sheet["!ref"]) return result;
+        const range = XLSX.utils.decode_range(sheet["!ref"]);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          const row = [];
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = { c: C, r: R };
+            const cell_ref = XLSX.utils.encode_cell(cell_address);
+            const cell = sheet[cell_ref];
+            row.push(cell ? cell.w : undefined);
+          }
+          result.push(row);
+        }
+        return result;
+      }
+
       function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function (e) {
           try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
-
             if (workbook.SheetNames.length < 2) {
               showStatus("Fayl ən azı 2 sheet-ə malik olmalıdır!", "error");
               return;
             }
-
-            const sheet1 = XLSX.utils.sheet_to_json(
-              workbook.Sheets[workbook.SheetNames[0]],
-              { header: 1 }
+            const sheet1 = sheetToArrayOfArrays(
+              workbook.Sheets[workbook.SheetNames[0]]
             );
-            const sheet2 = XLSX.utils.sheet_to_json(
-              workbook.Sheets[workbook.SheetNames[1]],
-              { header: 1 }
+            const sheet2 = sheetToArrayOfArrays(
+              workbook.Sheets[workbook.SheetNames[1]]
             );
-
             originalSheet1 = sheet1;
             originalSheet2 = sheet2;
-
             processedData.sheet1 = sheet1;
             processedData.sheet2 = sheet2;
-
             categorizeProducts(sheet1, sheet2);
-
             displayTable("sheet1Table", sheet1);
             displayTable("sheet2Table", sheet2);
             displayCategoryTable("standartTable", processedData.standart);
             displayCategoryTable("premiumTable", processedData.premium);
             displayCategoryTable("oemTable", processedData.oem);
-
             updateCategoryInfo();
-
             document.getElementById("downloadBtn").disabled = false;
-
             showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
           } catch (error) {
             showStatus(
@@ -478,11 +494,7 @@
         reader.readAsArrayBuffer(file);
       }
 
-      /**
-       * YENİ FUNKSİYA: Bütün tələblərə uyğun olaraq məhsulları təsnif edir.
-       */
       function categorizeProducts(sheet1, sheet2) {
-        // Nəticələri sıfırla
         processedData.standart = [];
         processedData.premium = [];
         processedData.oem = [];
@@ -490,9 +502,9 @@
         categoryProducts.premium = "";
         categoryProducts.oem = "";
 
-        // Sheet1-i sətirbəsətir gəzərək məhsul bloklarını tap
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
+          if (!headerRow) continue;
           const productNameInBlock = headerRow[1];
           const isProductBlockHeader = productNameInBlock && headerRow[2];
 
@@ -500,9 +512,9 @@
             let blockText = "";
             let blockEndIndex = i;
 
-            // Blokun sonunu tap və blokdakı bütün mətni yığ
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
+              if (!currentRow) continue;
               if (j > i && currentRow[1] && currentRow[2]) {
                 break;
               }
@@ -516,7 +528,6 @@
             const foundCategories = new Set();
             let explicitCategoryFound = false;
 
-            // Prioritet 1: Əsas kateqoriya adlarını axtar
             const primaryKeywords = {
               standart: "standart",
               premium: "premium",
@@ -526,11 +537,10 @@
               if (normalizedBlockText.includes(keyword)) {
                 foundCategories.add(primaryKeywords[keyword]);
                 explicitCategoryFound = true;
-                break; // Blokun əsas kateqoriyasını tapan kimi döngünü dayandır
+                break;
               }
             }
 
-            // Prioritet 2: Əgər əsas kateqoriya tapılmayıbsa, bütün açar sözləri axtar
             if (!explicitCategoryFound) {
               for (const pattern of productPatterns.oem) {
                 if (normalizedBlockText.includes(normalizeText(pattern))) {
@@ -549,11 +559,11 @@
               }
             }
 
-            // Kateqoriyalar tapılıbsa, sheet2-də ən yaxşı uyğunluğu axtar
             if (foundCategories.size > 0) {
               const potentialMatches = [];
               for (let k = 1; k < sheet2.length; k++) {
                 const sheet2Row = sheet2[k];
+                if (!sheet2Row) continue;
                 const sheet2ProductName = sheet2Row[1];
                 if (
                   sheet2ProductName &&
@@ -598,6 +608,7 @@
           }
         }
       }
+
       function generateSingleRowCategoryData(
         sheet1Row,
         sheet2Row,
@@ -608,8 +619,6 @@
         const productId = sheet2Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
-
-        // Kateqoriyaya əsasən spesifikasiya tipini təyin et (İstək 2)
         let specType = "";
         if (category === "oem") {
           specType = "Top Quality";
@@ -626,25 +635,12 @@
           pcmo,
           productId,
           productName,
-          `${productName}`, // Spesifikasiyanın adı
-          specType, // Spesifikasiyanın tipi
+          `${productName}`,
+          specType,
         ];
 
-        const materials = [
-          "Bidon",
-          "Qapaq",
-          "Etiket",
-          "Qutu",
-          "Palet",
-          "BE",
-          "CT",
-          "DS",
-          "SX",
-          "ZX",
-        ];
-
+        // DƏYİŞİKLİK: Məlumat strukturunu başlıqlarla uyğunlaşdır
         literSizes.forEach((literSize) => {
-          singleRow.push(`${literSize}`);
           materials.forEach((material) => {
             singleRow.push(material);
             singleRow.push(
@@ -688,17 +684,14 @@
           SX: "<Xarakteristika yoxdur>",
           ZX: "<Xarakteristika yoxdur>",
         };
-
         return characteristics[material] || `${material} ${literSize}`;
       }
 
       function updateCategoryInfo() {
         const categories = ["standart", "premium", "oem"];
-
         categories.forEach((category) => {
           const infoDiv = document.getElementById(category + "Info");
           const productDiv = document.getElementById(category + "Product");
-
           if (categoryProducts[category]) {
             infoDiv.style.display = "block";
             productDiv.textContent = categoryProducts[category];
@@ -715,18 +708,16 @@
             '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
           return;
         }
-
         let html = "";
         data.forEach((row, index) => {
           html += "<tr>";
-          row.forEach((cell) => {
+          (row || []).forEach((cell) => {
             const tag = index === 0 ? "th" : "td";
             const displayValue = processCell(cell);
             html += `<${tag}>${displayValue}</${tag}>`;
           });
           html += "</tr>";
         });
-
         table.innerHTML = html;
       }
 
@@ -750,12 +741,14 @@
           "Spesifikasıyanın tipi",
         ];
 
+        // DƏYİŞİKLİK: Başlıqları məlumat strukturu ilə eyniləşdir
         literSizes.forEach((literSize) => {
-          headers.push(`${literSize}`);
-          headers.push("Material");
-          headers.push("Xarakteristika");
-          headers.push("Ölçü vahidi");
-          headers.push("Miqdar");
+          materials.forEach((material) => {
+            headers.push(`Material (${literSize} - ${material})`);
+            headers.push(`Xarakteristika (${literSize} - ${material})`);
+            headers.push(`Ölçü vahidi (${literSize} - ${material})`);
+            headers.push(`Miqdar (${literSize} - ${material})`);
+          });
         });
 
         headers.forEach((header) => {
@@ -765,7 +758,7 @@
 
         data.forEach((row) => {
           html += "<tr>";
-          row.forEach((cell) => {
+          (row || []).forEach((cell) => {
             const displayValue = processCell(cell);
             html += `<td>${displayValue}</td>`;
           });
@@ -785,22 +778,19 @@
         return cell;
       }
 
-      function showTab(tabName) {
+      function showTab(tabName, element) {
         const contents = document.querySelectorAll(".tab-content");
         contents.forEach((content) => content.classList.remove("active"));
-
         const tabs = document.querySelectorAll(".tab");
         tabs.forEach((tab) => tab.classList.remove("active"));
-
         document.getElementById(tabName).classList.add("active");
-        event.target.classList.add("active");
+        element.classList.add("active");
       }
 
       function showStatus(message, type) {
         const statusDiv = document.getElementById("status");
         statusDiv.textContent = message;
         statusDiv.className = `status ${type}`;
-
         if (type === "success") {
           setTimeout(() => {
             statusDiv.textContent = "";
@@ -814,15 +804,12 @@
           showStatus("Əvvəlcə fayl yükləyin!", "error");
           return;
         }
-
         try {
           const wb = XLSX.utils.book_new();
-
           if (processedData.sheet1.length > 0) {
             const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
             XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
           }
-
           if (processedData.sheet2.length > 0) {
             const ws2 = XLSX.utils.aoa_to_sheet(processedData.sheet2);
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
@@ -838,14 +825,16 @@
               "Məhsulun adı",
               "Spesifikasıyanın adı",
               "Spesifikasıyanın tipi",
-              ...literSizes.flatMap((size) => [
-                `${size}`,
-                "Material",
-                "Xarakteristika",
-                "Ölçü vahidi",
-                "Miqdar",
-              ]),
             ];
+            // DƏYİŞİKLİK: Excel üçün də başlıqları düzgün təyin et
+            literSizes.forEach((literSize) => {
+              materials.forEach((material) => {
+                headers.push(`Material (${literSize} - ${material})`);
+                headers.push(`Xarakteristika (${literSize} - ${material})`);
+                headers.push(`Ölçü vahidi (${literSize} - ${material})`);
+                headers.push(`Miqdar (${literSize} - ${material})`);
+              });
+            });
             return [headers, ...data];
           };
 
@@ -856,7 +845,6 @@
             const ws3 = XLSX.utils.aoa_to_sheet(standartWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws3, "Standart");
           }
-
           if (processedData.premium.length > 0) {
             const premiumWithHeaders = createSheetWithHeaders(
               processedData.premium
@@ -864,13 +852,11 @@
             const ws4 = XLSX.utils.aoa_to_sheet(premiumWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws4, "Premium");
           }
-
           if (processedData.oem.length > 0) {
             const oemWithHeaders = createSheetWithHeaders(processedData.oem);
             const ws5 = XLSX.utils.aoa_to_sheet(oemWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws5, "OEM");
           }
-
           XLSX.writeFile(wb, "Processed_Engine_Oil_Data.xlsx");
           showStatus("Excel faylı uğurla yükləndi!", "success");
         } catch (error) {
