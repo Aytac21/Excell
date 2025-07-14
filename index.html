@@ -558,7 +558,7 @@
           // Hər bir uyğun Sheet2 sətiri üçün kateqoriya təyin et
           matchingSheet2Rows.forEach((sheet2Row) => {
             const sheet2ProductName = sheet2Row[1];
-            const specificationType = sheet1Row[3] || "";
+            const specificationType = sheet2Row[3] || "";
 
             const combinedText = normalizeText(
               sheet1ProductName +
