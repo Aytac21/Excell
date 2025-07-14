@@ -558,7 +558,7 @@
           // Hər bir uyğun Sheet2 sətiri üçün kateqoriya təyin et
           matchingSheet2Rows.forEach((sheet2Row) => {
             const sheet2ProductName = sheet2Row[1];
-            const specificationType = sheet2Row[3] || "";
+            const specificationType = sheet1Row[3] || "";
 
             const combinedText = normalizeText(
               sheet1ProductName +
@@ -617,7 +617,7 @@
         productName
       ) {
         const result = [];
-        const productId = sheet1Row[0] || `AL/EO-0001`;
+        const productId = sheet2Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
 
@@ -776,7 +776,7 @@
 
         result.push(headers);
 
-        const productId = sheet1Row[0] || `AL/EO-0001`;
+        const productId = sheet2Row[0];
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
 
@@ -899,7 +899,7 @@
   `;
 
         debugContent.innerHTML = debugText;
-        debugDiv.style.display = "block"; // Debug məlumatını göstər
+        debugDiv.style.display = "none"; // Debug məlumatını göstər
       }
 
       function updatePatternMatchResults(patternResults) {
@@ -927,7 +927,7 @@
           patternContent.innerHTML = patternText;
         }
 
-        patternDiv.style.display = "block"; // Pattern nəticələrini göstər
+        patternDiv.style.display = "none"; // Pattern nəticələrini göstər
       }
 
       function displayTable(tableId, data) {
