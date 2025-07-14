@@ -358,6 +358,7 @@
       let originalSheet1 = [];
       let originalSheet2 = [];
 
+      // İstifadəçi tərəfindən verilən spesifikasiya açar sözləri
       const productPatterns = {
         oem: [
           "oem",
@@ -458,9 +459,9 @@
 
             displayTable("sheet1Table", sheet1);
             displayTable("sheet2Table", sheet2);
-            displayTable("standartTable", processedData.standart);
-            displayTable("premiumTable", processedData.premium);
-            displayTable("oemTable", processedData.oem);
+            displayCategoryTable("standartTable", processedData.standart);
+            displayCategoryTable("premiumTable", processedData.premium);
+            displayCategoryTable("oemTable", processedData.oem);
 
             updateCategoryInfo();
 
@@ -477,149 +478,157 @@
         reader.readAsArrayBuffer(file);
       }
 
+      /**
+       * YENİ FUNKSİYA: Bütün tələblərə uyğun olaraq məhsulları təsnif edir.
+       */
       function categorizeProducts(sheet1, sheet2) {
+        // Nəticələri sıfırla
         processedData.standart = [];
         processedData.premium = [];
         processedData.oem = [];
-
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
-        let patternMatchResults = [];
 
-        // Initialize category data with headers
-        const headers = [
-          "ID",
-          "Product name",
-          "Engine oil",
-          "Passenger car motor oil (PCMO)",
-          "Məhsulun ID",
-          "Məhsulun adı",
-          "Spesifikasıyanın adı",
-          "Spesifikasıyanın tipi",
-          "Material",
-          "Xarakteristika",
-          "Ölçü vahidi",
-          "Miqdar",
-          "Material",
-          "Xarakteristika",
-        ];
-
-        literSizes.forEach((size) => {
-          headers.push(
-            `${size}`,
-            `Miqdar`,
-            `Material`,
-            `Xarakteristika`,
-            `Ölçü vahidi`
-          );
-        });
-
-        // Set headers for each category
-        processedData.standart.push(headers);
-        processedData.premium.push(headers);
-        processedData.oem.push(headers);
-
-        // Track processed products to avoid duplicates
-        const processedProducts = {
-          standart: new Set(),
-          premium: new Set(),
-          oem: new Set(),
-        };
-
-        // Bütün Sheet1 məhsulları üçün
+        // Sheet1-i sətirbəsətir gəzərək məhsul bloklarını tap
         for (let i = 1; i < sheet1.length; i++) {
-          const sheet1Row = sheet1[i];
-          const sheet1ProductName = sheet1Row[1];
-          if (!sheet1ProductName) continue;
+          const headerRow = sheet1[i];
+          const productNameInBlock = headerRow[1];
+          const isProductBlockHeader = productNameInBlock && headerRow[2];
 
-          // Sheet2-də uyğun məhsul tap
-          let matchingSheet2Rows = [];
-          for (let j = 1; j < sheet2.length; j++) {
-            const sheet2Row = sheet2[j];
-            const sheet2ProductName = sheet2Row[1];
-            const sheet2SpecType = sheet2Row[3] || "";
+          if (isProductBlockHeader) {
+            let blockText = "";
+            let blockEndIndex = i;
 
-            if (!sheet2ProductName) continue;
-
-            // Məhsul adları arasında oxşarlıq yoxla
-            if (
-              normalizeText(sheet1ProductName).includes(
-                normalizeText(sheet2ProductName)
-              ) ||
-              normalizeText(sheet2ProductName).includes(
-                normalizeText(sheet1ProductName)
-              )
-            ) {
-              matchingSheet2Rows.push(sheet2Row);
+            // Blokun sonunu tap və blokdakı bütün mətni yığ
+            for (let j = i; j < sheet1.length; j++) {
+              const currentRow = sheet1[j];
+              if (j > i && currentRow[1] && currentRow[2]) {
+                break;
+              }
+              if (currentRow[1]) {
+                blockText += " " + currentRow[1];
+              }
+              blockEndIndex = j;
             }
-          }
 
-          // Hər bir uyğun Sheet2 sətiri üçün kateqoriya təyin et
-          matchingSheet2Rows.forEach((sheet2Row) => {
-            const sheet2ProductName = sheet2Row[1];
-            const specificationType = sheet2Row[3] || "";
+            const normalizedBlockText = normalizeText(blockText);
+            const foundCategories = new Set();
+            let explicitCategoryFound = false;
 
-            const combinedText = normalizeText(
-              sheet1ProductName +
-                " " +
-                sheet2ProductName +
-                " " +
-                specificationType
-            );
-
-            const category = determineCategory(combinedText);
-
-            if (category) {
-              patternMatchResults.push({
-                sheet1Product: sheet1ProductName,
-                sheet2Product: sheet2ProductName,
-                specification: specificationType,
-                category: category,
-                combinedText: combinedText,
-                matchedPattern: getMatchedPattern(combinedText, category),
-              });
-
-              // Check if this product is already processed for this category
-              const productKey = `${sheet1ProductName}_${sheet2ProductName}`;
-              if (!processedProducts[category].has(productKey)) {
-                processedProducts[category].add(productKey);
-
-                // Set category product name if not set
-                if (!categoryProducts[category]) {
-                  categoryProducts[category] = sheet2ProductName;
-                }
-
-                // Generate category data for this product
-                const categoryData = generateCategoryDataRows(
-                  sheet1Row,
-                  sheet2Row,
-                  category,
-                  sheet2ProductName
-                );
-
-                // Append to existing category data (skip headers)
-                processedData[category].push(...categoryData);
+            // Prioritet 1: Əsas kateqoriya adlarını axtar
+            const primaryKeywords = {
+              standart: "standart",
+              premium: "premium",
+              "top quality": "oem",
+            };
+            for (const keyword in primaryKeywords) {
+              if (normalizedBlockText.includes(keyword)) {
+                foundCategories.add(primaryKeywords[keyword]);
+                explicitCategoryFound = true;
+                break; // Blokun əsas kateqoriyasını tapan kimi döngünü dayandır
               }
             }
-          });
+
+            // Prioritet 2: Əgər əsas kateqoriya tapılmayıbsa, bütün açar sözləri axtar
+            if (!explicitCategoryFound) {
+              for (const pattern of productPatterns.oem) {
+                if (normalizedBlockText.includes(normalizeText(pattern))) {
+                  foundCategories.add("oem");
+                }
+              }
+              for (const pattern of productPatterns.premium) {
+                if (normalizedBlockText.includes(normalizeText(pattern))) {
+                  foundCategories.add("premium");
+                }
+              }
+              for (const pattern of productPatterns.standart) {
+                if (normalizedBlockText.includes(normalizeText(pattern))) {
+                  foundCategories.add("standart");
+                }
+              }
+            }
+
+            // Kateqoriyalar tapılıbsa, sheet2-də ən yaxşı uyğunluğu axtar
+            if (foundCategories.size > 0) {
+              const potentialMatches = [];
+              for (let k = 1; k < sheet2.length; k++) {
+                const sheet2Row = sheet2[k];
+                const sheet2ProductName = sheet2Row[1];
+                if (
+                  sheet2ProductName &&
+                  normalizeText(sheet2ProductName).includes(
+                    normalizeText(productNameInBlock)
+                  )
+                ) {
+                  potentialMatches.push(sheet2Row);
+                }
+              }
+
+              let bestMatchRow = null;
+              if (potentialMatches.length === 1) {
+                bestMatchRow = potentialMatches[0];
+              } else if (potentialMatches.length > 1) {
+                potentialMatches.sort(
+                  (a, b) => (a[1] || "").length - (b[1] || "").length
+                );
+                bestMatchRow = potentialMatches[0];
+              }
+
+              if (bestMatchRow) {
+                const sheet2ProductName = bestMatchRow[1];
+                foundCategories.forEach((category) => {
+                  const categoryData = generateSingleRowCategoryData(
+                    headerRow,
+                    bestMatchRow,
+                    category,
+                    sheet2ProductName,
+                    bestMatchRow[3] || ""
+                  );
+                  processedData[category].push(categoryData);
+
+                  if (!categoryProducts[category]) {
+                    categoryProducts[category] = sheet2ProductName;
+                  }
+                });
+              }
+            }
+
+            i = blockEndIndex;
+          }
         }
-
-        updateDebugInfo(sheet1, sheet2, patternMatchResults);
-        updatePatternMatchResults(patternMatchResults);
       }
-
-      // New function to generate only the data rows (without headers)
-      function generateCategoryDataRows(
+      function generateSingleRowCategoryData(
         sheet1Row,
         sheet2Row,
         category,
-        productName
+        productName,
+        specificationType
       ) {
-        const result = [];
         const productId = sheet2Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
+
+        // Kateqoriyaya əsasən spesifikasiya tipini təyin et (İstək 2)
+        let specType = "";
+        if (category === "oem") {
+          specType = "Top Quality";
+        } else if (category === "premium") {
+          specType = "Premium";
+        } else {
+          specType = "Standart";
+        }
+
+        const singleRow = [
+          productId,
+          productName,
+          engineOil,
+          pcmo,
+          productId,
+          productName,
+          `${productName}`, // Spesifikasiyanın adı
+          specType, // Spesifikasiyanın tipi
+        ];
 
         const materials = [
           "Bidon",
@@ -635,49 +644,20 @@
         ];
 
         literSizes.forEach((literSize) => {
+          singleRow.push(`${literSize}`);
           materials.forEach((material) => {
-            const materialRow = [
-              productId,
-              productName,
-              engineOil,
-              pcmo,
-              productId,
-              productName,
-              `${productName} ${literSize}`,
-              category === "oem"
-                ? "Top Quality"
-                : category.charAt(0).toUpperCase() + category.slice(1),
-              material,
-              getMaterialCharacteristic(material, literSize, productName),
-              "adəd",
-              "1",
-            ];
-
-            materialRow.push(
-              material,
+            singleRow.push(material);
+            singleRow.push(
               getMaterialCharacteristic(material, literSize, productName)
             );
-
-            literSizes.forEach((size) => {
-              if (size === literSize) {
-                materialRow.push(
-                  material,
-                  "1",
-                  material,
-                  getMaterialCharacteristic(material, size, productName),
-                  "adəd"
-                );
-              } else {
-                materialRow.push("-", "-", "-", "-", "-");
-              }
-            });
-
-            result.push(materialRow);
+            singleRow.push("adəd");
+            singleRow.push("1");
           });
         });
 
-        return result;
+        return singleRow;
       }
+
       function normalizeText(text) {
         if (!text) return "";
         return text
@@ -693,149 +673,6 @@
           .replace(/[^\w\s-]/g, " ")
           .replace(/\s+/g, " ")
           .trim();
-      }
-
-      function determineCategory(normalizedText) {
-        console.log("Checking text:", normalizedText);
-
-        // Əvvəlcə OEM yoxla (ən spesifik)
-        for (let pattern of productPatterns.oem) {
-          const normalizedPattern = normalizeText(pattern);
-          if (normalizedText.includes(normalizedPattern)) {
-            console.log("OEM pattern matched:", pattern);
-            return "oem";
-          }
-        }
-
-        // Sonra Premium yoxla
-        for (let pattern of productPatterns.premium) {
-          const normalizedPattern = normalizeText(pattern);
-          if (normalizedText.includes(normalizedPattern)) {
-            console.log("Premium pattern matched:", pattern);
-            return "premium";
-          }
-        }
-
-        // Sonda Standart yoxla (ən ümumi)
-        for (let pattern of productPatterns.standart) {
-          const normalizedPattern = normalizeText(pattern);
-          if (normalizedText.includes(normalizedPattern)) {
-            console.log("Standart pattern matched:", pattern);
-            return "standart";
-          }
-        }
-
-        console.log("No pattern matched for:", normalizedText);
-        return null;
-      }
-
-      function getMatchedPattern(normalizedText, category) {
-        for (let pattern of productPatterns[category]) {
-          const normalizedPattern = normalizeText(pattern);
-          if (normalizedText.includes(normalizedPattern)) {
-            return pattern;
-          }
-        }
-        return "unknown";
-      }
-
-      function generateCategoryData(
-        sheet1Row,
-        sheet2Row,
-        category,
-        productName
-      ) {
-        const result = [];
-
-        const headers = [
-          "ID",
-          "Product name",
-          "Engine oil",
-          "Passenger car motor oil (PCMO)",
-          "Məhsulun ID",
-          "Məhsulun adı",
-          "Spesifikasıyanın adı",
-          "Spesifikasıyanın tipi",
-          "Material",
-          "Xarakteristika",
-          "Ölçü vahidi",
-          "Miqdar",
-          "Material",
-          "Xarakteristika",
-        ];
-
-        literSizes.forEach((size) => {
-          headers.push(
-            `${size}`,
-            `Miqdar`,
-            `Material`,
-            `Xarakteristika`,
-            `Ölçü vahidi`
-          );
-        });
-
-        result.push(headers);
-
-        const productId = sheet2Row[0];
-        const engineOil = "Engine oil";
-        const pcmo = "Passenger car motor oil (PCMO)";
-
-        const materials = [
-          "Bidon",
-          "Qapaq",
-          "Etiket",
-          "Qutu",
-          "Palet",
-          "BE",
-          "CT",
-          "DS",
-          "SX",
-          "ZX",
-        ];
-
-        literSizes.forEach((literSize) => {
-          materials.forEach((material) => {
-            const materialRow = [
-              productId,
-              productName,
-              engineOil,
-              pcmo,
-              productId,
-              productName,
-              `${productName} ${literSize}`,
-              category === "oem"
-                ? "Top Quality"
-                : category.charAt(0).toUpperCase() + category.slice(1),
-              material,
-              getMaterialCharacteristic(material, literSize, productName),
-              "adəd",
-              "1",
-            ];
-
-            materialRow.push(
-              material,
-              getMaterialCharacteristic(material, literSize, productName)
-            );
-
-            literSizes.forEach((size) => {
-              if (size === literSize) {
-                materialRow.push(
-                  material,
-                  "1",
-                  material,
-                  getMaterialCharacteristic(material, size, productName),
-                  "adəd"
-                );
-              } else {
-                materialRow.push("-", "-", "-", "-", "-");
-              }
-            });
-
-            result.push(materialRow);
-          });
-        });
-
-        return result;
       }
 
       function getMaterialCharacteristic(material, literSize, productName) {
@@ -871,65 +708,6 @@
         });
       }
 
-      function updateDebugInfo(sheet1, sheet2, patternResults) {
-        const debugDiv = document.getElementById("debugInfo");
-        const debugContent = document.getElementById("debugContent");
-
-        let debugText = `
-    <strong>Sheet1 Products (${sheet1.length - 1} rows):</strong><br>
-    ${sheet1
-      .slice(1, Math.min(6, sheet1.length))
-      .map((row, i) => `${i + 1}. ${row[1] || "No name"}`)
-      .join("<br>")}<br><br>
-    
-    <strong>Sheet2 Products (${sheet2.length - 1} rows):</strong><br>
-    ${sheet2
-      .slice(1, Math.min(6, sheet2.length))
-      .map(
-        (row, i) => `${i + 1}. ${row[1] || "No name"} - ${row[3] || "No type"}`
-      )
-      .join("<br>")}<br><br>
-    
-    <strong>Categorized Products:</strong><br>
-    Standart: ${categoryProducts.standart || "None"}<br>
-    Premium: ${categoryProducts.premium || "None"}<br>
-    OEM: ${categoryProducts.oem || "None"}<br><br>
-    
-    <strong>Pattern Matches Found:</strong> ${patternResults.length}
-  `;
-
-        debugContent.innerHTML = debugText;
-        debugDiv.style.display = "none"; // Debug məlumatını göstər
-      }
-
-      function updatePatternMatchResults(patternResults) {
-        const patternDiv = document.getElementById("patternMatch");
-        const patternContent = document.getElementById("patternContent");
-
-        if (patternResults.length === 0) {
-          patternContent.innerHTML =
-            "<p>Heç bir pattern match tapılmadı. Məlumat strukturunu yoxlayın.</p>";
-        } else {
-          let patternText = patternResults
-            .map(
-              (result) => `
-        <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-          <strong>Sheet1 Product:</strong> ${result.sheet1Product}<br>
-          <strong>Sheet2 Product:</strong> ${result.sheet2Product}<br>
-          <strong>Specification:</strong> ${result.specification}<br>
-          <strong>Category:</strong> ${result.category}<br>
-          <strong>Matched Pattern:</strong> ${result.matchedPattern}<br>
-          <strong>Combined Text:</strong> ${result.combinedText}
-        </div>
-      `
-            )
-            .join("");
-          patternContent.innerHTML = patternText;
-        }
-
-        patternDiv.style.display = "none"; // Pattern nəticələrini göstər
-      }
-
       function displayTable(tableId, data) {
         const table = document.getElementById(tableId);
         if (!data || data.length === 0) {
@@ -945,6 +723,51 @@
             const tag = index === 0 ? "th" : "td";
             const displayValue = processCell(cell);
             html += `<${tag}>${displayValue}</${tag}>`;
+          });
+          html += "</tr>";
+        });
+
+        table.innerHTML = html;
+      }
+
+      function displayCategoryTable(tableId, data) {
+        const table = document.getElementById(tableId);
+        if (!data || data.length === 0) {
+          table.innerHTML =
+            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
+          return;
+        }
+
+        let html = "<tr>";
+        const headers = [
+          "ID",
+          "Product name",
+          "Engine oil",
+          "PCMO",
+          "Məhsulun ID",
+          "Məhsulun adı",
+          "Spesifikasıyanın adı",
+          "Spesifikasıyanın tipi",
+        ];
+
+        literSizes.forEach((literSize) => {
+          headers.push(`${literSize}`);
+          headers.push("Material");
+          headers.push("Xarakteristika");
+          headers.push("Ölçü vahidi");
+          headers.push("Miqdar");
+        });
+
+        headers.forEach((header) => {
+          html += `<th>${header}</th>`;
+        });
+        html += "</tr>";
+
+        data.forEach((row) => {
+          html += "<tr>";
+          row.forEach((cell) => {
+            const displayValue = processCell(cell);
+            html += `<td>${displayValue}</td>`;
           });
           html += "</tr>";
         });
@@ -1005,18 +828,46 @@
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
           }
 
+          const createSheetWithHeaders = (data) => {
+            const headers = [
+              "ID",
+              "Product name",
+              "Engine oil",
+              "PCMO",
+              "Məhsulun ID",
+              "Məhsulun adı",
+              "Spesifikasıyanın adı",
+              "Spesifikasıyanın tipi",
+              ...literSizes.flatMap((size) => [
+                `${size}`,
+                "Material",
+                "Xarakteristika",
+                "Ölçü vahidi",
+                "Miqdar",
+              ]),
+            ];
+            return [headers, ...data];
+          };
+
           if (processedData.standart.length > 0) {
-            const ws3 = XLSX.utils.aoa_to_sheet(processedData.standart);
+            const standartWithHeaders = createSheetWithHeaders(
+              processedData.standart
+            );
+            const ws3 = XLSX.utils.aoa_to_sheet(standartWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws3, "Standart");
           }
 
           if (processedData.premium.length > 0) {
-            const ws4 = XLSX.utils.aoa_to_sheet(processedData.premium);
+            const premiumWithHeaders = createSheetWithHeaders(
+              processedData.premium
+            );
+            const ws4 = XLSX.utils.aoa_to_sheet(premiumWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws4, "Premium");
           }
 
           if (processedData.oem.length > 0) {
-            const ws5 = XLSX.utils.aoa_to_sheet(processedData.oem);
+            const oemWithHeaders = createSheetWithHeaders(processedData.oem);
+            const ws5 = XLSX.utils.aoa_to_sheet(oemWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws5, "OEM");
           }
 
