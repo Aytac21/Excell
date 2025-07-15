@@ -361,6 +361,7 @@
 
       let originalSheet1 = [];
       let originalSheet2 = [];
+      let dynamicBaseOils = []; // Dynamic base oils from sheet1
 
       const productPatterns = {
         oem: ["top quality", "premium - top quality", "premium-top quality"],
@@ -422,17 +423,8 @@
       const allProductSizes = [...literSizes, ...kiloSizes];
 
       const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
-      const baseOilsAndAdditives = [
-        "BE",
-        "CT",
-        "DS",
-        "ML",
-        "MO",
-        "PA",
-        "SX",
-        "ZX",
-      ];
-      const allMaterials = [...packagingMaterials, ...baseOilsAndAdditives];
+      // Base oils will be dynamically loaded from sheet1
+      let allMaterials = [...packagingMaterials]; // Will be updated with dynamic base oils
 
       document
         .getElementById("fileInput")
@@ -455,6 +447,34 @@
         return result;
       }
 
+      function extractDynamicBaseOils(sheet1) {
+        const baseOils = new Set();
+
+        // Look for base oils in column 2 (index 2)
+        for (let i = 1; i < sheet1.length; i++) {
+          const row = sheet1[i];
+          if (!row) continue;
+
+          const code = row[2];
+          if (code && typeof code === "string") {
+            const trimmedCode = code.trim();
+            // Check if it's a potential base oil code (typically 2-3 uppercase letters)
+            if (
+              trimmedCode.length >= 2 &&
+              trimmedCode.length <= 3 &&
+              /^[A-Z]+$/.test(trimmedCode)
+            ) {
+              // Exclude known packaging materials
+              if (!packagingMaterials.includes(trimmedCode)) {
+                baseOils.add(trimmedCode);
+              }
+            }
+          }
+        }
+
+        return Array.from(baseOils).sort();
+      }
+
       function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -473,6 +493,11 @@
             const sheet2 = sheetToArrayOfArrays(
               workbook.Sheets[workbook.SheetNames[1]]
             );
+
+            // Extract dynamic base oils from sheet1
+            dynamicBaseOils = extractDynamicBaseOils(sheet1);
+            allMaterials = [...packagingMaterials, ...dynamicBaseOils];
+
             originalSheet1 = sheet1;
             originalSheet2 = sheet2;
             processedData.sheet1 = sheet1;
@@ -486,6 +511,9 @@
             updateCategoryInfo();
             document.getElementById("downloadBtn").disabled = false;
             showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
+
+            // Debug info
+            console.log("Dynamic base oils found:", dynamicBaseOils);
           } catch (error) {
             showStatus(
               "Fayl oxunarkən xəta baş verdi: " + error.message,
@@ -632,7 +660,7 @@
         allProductSizes.forEach((size) => {
           allMaterials.forEach((material) => {
             singleRow.push(material);
-            const isAdditive = baseOilsAndAdditives.includes(material);
+            const isAdditive = dynamicBaseOils.includes(material);
 
             if (isAdditive) {
               const percentage = additivesData[material];
@@ -683,15 +711,13 @@
           Etiket: `${productName} (BK-06)`,
           Qutu: `Kıpaj Aminol ${formattedSize}`,
           Palet: "1.14x1.14",
-          BE: "<Xarakteristika yoxdur>",
-          CT: "<Xarakteristika yoxdur>",
-          DS: "<Xarakteristika yoxdur>",
-          ML: "<Xarakteristika yoxdur>",
-          MO: "<Xarakteristika yoxdur>",
-          PA: "<Xarakteristika yoxdur>",
-          SX: "<Xarakteristika yoxdur>",
-          ZX: "<Xarakteristika yoxdur>",
         };
+
+        // For dynamic base oils, return default characteristic
+        if (dynamicBaseOils.includes(material)) {
+          return "<Xarakteristika yoxdur>";
+        }
+
         return characteristics[material] || `${material} ${formattedSize}`;
       }
 
