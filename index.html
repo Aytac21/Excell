@@ -286,11 +286,15 @@
       </div>
 
       <div class="tabs">
-        <button class="tab active" onclick="showTab('sheet1')">Sheet1</button>
-        <button class="tab" onclick="showTab('sheet2')">Sheet2</button>
-        <button class="tab" onclick="showTab('standart')">Standart</button>
-        <button class="tab" onclick="showTab('premium')">Premium</button>
-        <button class="tab" onclick="showTab('oem')">OEM</button>
+        <button class="tab active" onclick="showTab('sheet1', this)">
+          Sheet1
+        </button>
+        <button class="tab" onclick="showTab('sheet2', this)">Sheet2</button>
+        <button class="tab" onclick="showTab('standart', this)">
+          Standart
+        </button>
+        <button class="tab" onclick="showTab('premium', this)">Premium</button>
+        <button class="tab" onclick="showTab('oem', this)">OEM</button>
       </div>
 
       <div id="sheet1" class="tab-content active">
@@ -402,19 +406,39 @@
         ],
       };
 
-      const literSizes = ["1L", "1.5L", "4L", "5L", "6L", "7L", "10L", "18L"];
-      const materials = [
-        "Bidon",
-        "Qapaq",
-        "Etiket",
-        "Qutu",
-        "Palet",
+      const literSizes = [
+        "0.25L",
+        "0.5L",
+        "1L",
+        "1.5L",
+        "4L",
+        "5L",
+        "6L",
+        "7L",
+        "10L",
+        "18L",
+        "20L",
+        "25L",
+        "30L",
+        "60L",
+        "200L",
+        "1000L",
+      ];
+      const kiloSizes = ["4kg", "9kg", "14kg", "18kg", "180kg"];
+      const allProductSizes = [...literSizes, ...kiloSizes];
+
+      const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
+      const baseOilsAndAdditives = [
         "BE",
         "CT",
         "DS",
+        "ML",
+        "MO",
+        "PA",
         "SX",
         "ZX",
       ];
+      const allMaterials = [...packagingMaterials, ...baseOilsAndAdditives];
 
       document
         .getElementById("fileInput")
@@ -495,6 +519,7 @@
           if (isProductBlockHeader) {
             let blockText = "";
             let blockEndIndex = i;
+            let additivesData = {};
 
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
@@ -502,29 +527,34 @@
               if (j > i && currentRow[1] && currentRow[2]) {
                 break;
               }
+              blockEndIndex = j;
               if (currentRow[1]) {
                 blockText += " " + currentRow[1];
               }
-              blockEndIndex = j;
+              const additiveCode = currentRow[2];
+              const additivePercent = currentRow[3];
+              if (
+                additiveCode &&
+                additivePercent &&
+                allMaterials.includes(additiveCode.trim())
+              ) {
+                additivesData[additiveCode.trim()] = additivePercent;
+              }
             }
 
             const normalizedBlockText = normalizeText(blockText);
-            // DƏYİŞİKLİK: Uyğun gələn kateqoriya və açar sözü saxlamaq üçün obyekt istifadə edirik
             const foundMatches = {};
 
-            // Bütün OEM nümunələrini yoxla
             for (const pattern of productPatterns.oem) {
               if (normalizedBlockText.includes(normalizeText(pattern))) {
-                foundMatches["oem"] = pattern; // Hansı sözün uyğun gəldiyini saxla
+                foundMatches["oem"] = pattern;
               }
             }
-            // Bütün Premium nümunələrini yoxla
             for (const pattern of productPatterns.premium) {
               if (normalizedBlockText.includes(normalizeText(pattern))) {
                 foundMatches["premium"] = pattern;
               }
             }
-            // Bütün Standart nümunələrini yoxla
             for (const pattern of productPatterns.standart) {
               if (normalizedBlockText.includes(normalizeText(pattern))) {
                 foundMatches["standart"] = pattern;
@@ -559,15 +589,15 @@
 
               if (bestMatchRow) {
                 const sheet2ProductName = bestMatchRow[1];
-                // DƏYİŞİKLİK: Uyğun gələn hər kateqoriya üçün dövr edirik
                 for (const category in foundMatches) {
-                  const matchedPattern = foundMatches[category]; // Uyğun gələn konkret sözü alırıq
+                  const matchedPattern = foundMatches[category];
                   const categoryData = generateSingleRowCategoryData(
                     headerRow,
                     bestMatchRow,
                     category,
                     sheet2ProductName,
-                    matchedPattern // Konkret sözü funksiyaya ötürürük
+                    matchedPattern,
+                    additivesData
                   );
                   processedData[category].push(categoryData);
 
@@ -577,7 +607,6 @@
                 }
               }
             }
-
             i = blockEndIndex;
           }
         }
@@ -588,13 +617,12 @@
         sheet2Row,
         category,
         productName,
-        matchedPattern // DƏYİŞİKLİK: Ötürülən açar sözü qəbul edir
+        matchedPattern,
+        additivesData
       ) {
         const productId = sheet2Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
-
-        // DƏYİŞİKLİK: "Spesifikasiyanın tipi" birbaşa uyğun gələn açar söz olur
         const specType = matchedPattern;
 
         const singleRow = [
@@ -605,22 +633,36 @@
           productId,
           productName,
           `${productName}`,
-          specType, // Spesifikasiya tipi olaraq konkret açar sözü yazırıq
+          specType,
         ];
 
-        literSizes.forEach((literSize) => {
-          materials.forEach((material) => {
+        allProductSizes.forEach((size) => {
+          allMaterials.forEach((material) => {
             singleRow.push(material);
-            singleRow.push(
-              getMaterialCharacteristic(material, literSize, productName)
-            );
-            singleRow.push("adəd");
-            singleRow.push("1");
+            const isAdditive = baseOilsAndAdditives.includes(material);
+
+            if (isAdditive) {
+              const percentage = additivesData[material];
+              singleRow.push("<Xarakteristika yoxdur>");
+              singleRow.push("faiz");
+              if (percentage) {
+                singleRow.push(`${percentage}%`);
+              } else {
+                singleRow.push("-");
+              }
+            } else {
+              singleRow.push(
+                getMaterialCharacteristic(material, size, productName)
+              );
+              singleRow.push("adəd");
+              singleRow.push("1");
+            }
           });
         });
 
         return singleRow;
       }
+
       function normalizeText(text) {
         if (!text) return "";
         return text
@@ -638,20 +680,26 @@
           .trim();
       }
 
-      function getMaterialCharacteristic(material, literSize, productName) {
+      function getMaterialCharacteristic(material, size, productName) {
+        const formattedSize = size.endsWith("L")
+          ? size.replace("L", " L")
+          : size.replace("kg", " kg");
         const characteristics = {
-          Bidon: `${literSize} Açıq Göy Aminol (öz istehsal)`,
-          Qapaq: `Qırmızı ${literSize} (50/22 telescopic)`,
+          Bidon: `${formattedSize} Açıq Göy Aminol (öz istehsal)`,
+          Qapaq: `Qırmızı ${formattedSize} (50/22 telescopic)`,
           Etiket: `${productName} (BK-06)`,
-          Qutu: `Kıpaj Aminol ${literSize}`,
+          Qutu: `Kıpaj Aminol ${formattedSize}`,
           Palet: "1.14x1.14",
           BE: "<Xarakteristika yoxdur>",
           CT: "<Xarakteristika yoxdur>",
           DS: "<Xarakteristika yoxdur>",
+          ML: "<Xarakteristika yoxdur>",
+          MO: "<Xarakteristika yoxdur>",
+          PA: "<Xarakteristika yoxdur>",
           SX: "<Xarakteristika yoxdur>",
           ZX: "<Xarakteristika yoxdur>",
         };
-        return characteristics[material] || `${material} ${literSize}`;
+        return characteristics[material] || `${material} ${formattedSize}`;
       }
 
       function updateCategoryInfo() {
@@ -708,13 +756,15 @@
           "Spesifikasıyanın tipi",
         ];
 
-        // DƏYİŞİKLİK: Başlıqları məlumat strukturu ilə eyniləşdir
-        literSizes.forEach((literSize) => {
-          materials.forEach((material) => {
-            headers.push(`Material (${literSize} - ${material})`);
-            headers.push(`Xarakteristika (${literSize} - ${material})`);
-            headers.push(`Ölçü vahidi (${literSize} - ${material})`);
-            headers.push(`Miqdar (${literSize} - ${material})`);
+        allProductSizes.forEach((size) => {
+          allMaterials.forEach((material) => {
+            const formattedSize = size.endsWith("L")
+              ? size.replace("L", " L")
+              : size.replace("kg", " kg");
+            headers.push(`Material (${formattedSize} - ${material})`);
+            headers.push(`Xarakteristika (${formattedSize} - ${material})`);
+            headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
+            headers.push(`Miqdar (${formattedSize} - ${material})`);
           });
         });
 
@@ -751,7 +801,9 @@
         const tabs = document.querySelectorAll(".tab");
         tabs.forEach((tab) => tab.classList.remove("active"));
         document.getElementById(tabName).classList.add("active");
-        element.classList.add("active");
+        if (element) {
+          element.classList.add("active");
+        }
       }
 
       function showStatus(message, type) {
@@ -793,13 +845,15 @@
               "Spesifikasıyanın adı",
               "Spesifikasıyanın tipi",
             ];
-            // DƏYİŞİKLİK: Excel üçün də başlıqları düzgün təyin et
-            literSizes.forEach((literSize) => {
-              materials.forEach((material) => {
-                headers.push(`Material (${literSize} - ${material})`);
-                headers.push(`Xarakteristika (${literSize} - ${material})`);
-                headers.push(`Ölçü vahidi (${literSize} - ${material})`);
-                headers.push(`Miqdar (${literSize} - ${material})`);
+            allProductSizes.forEach((size) => {
+              allMaterials.forEach((material) => {
+                const formattedSize = size.endsWith("L")
+                  ? size.replace("L", " L")
+                  : size.replace("kg", " kg");
+                headers.push(`Material (${formattedSize} - ${material})`);
+                headers.push(`Xarakteristika (${formattedSize} - ${material})`);
+                headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
+                headers.push(`Miqdar (${formattedSize} - ${material})`);
               });
             });
             return [headers, ...data];
