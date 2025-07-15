@@ -360,9 +360,6 @@
 
       const productPatterns = {
         oem: [
-          "oem",
-          "0w-20",
-          "0w20",
           "top quality",
           "top tier",
           "original equipment",
@@ -371,15 +368,6 @@
         ],
         premium: [
           "premium",
-          "ilsac",
-          "gf-6a",
-          "gf-6b",
-          "gf-5",
-          "api sp",
-          "sn plus",
-          "sp/gf-6a",
-          "sp/gf-6b",
-          "sn/gf-5",
           "special generation",
           "premium - standart",
           "premium-standart",
@@ -394,10 +382,6 @@
         standart: [
           "standart",
           "standard",
-          "sl",
-          "cf",
-          "api cf",
-          "api sl",
           "orjinal",
           "ekonomik",
           "ekonomik alternativ",
@@ -525,41 +509,29 @@
             }
 
             const normalizedBlockText = normalizeText(blockText);
-            const foundCategories = new Set();
-            let explicitCategoryFound = false;
+            // DƏYİŞİKLİK: Uyğun gələn kateqoriya və açar sözü saxlamaq üçün obyekt istifadə edirik
+            const foundMatches = {};
 
-            const primaryKeywords = {
-              standart: "standart",
-              premium: "premium",
-              "top quality": "oem",
-            };
-            for (const keyword in primaryKeywords) {
-              if (normalizedBlockText.includes(keyword)) {
-                foundCategories.add(primaryKeywords[keyword]);
-                explicitCategoryFound = true;
-                break;
+            // Bütün OEM nümunələrini yoxla
+            for (const pattern of productPatterns.oem) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["oem"] = pattern; // Hansı sözün uyğun gəldiyini saxla
+              }
+            }
+            // Bütün Premium nümunələrini yoxla
+            for (const pattern of productPatterns.premium) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["premium"] = pattern;
+              }
+            }
+            // Bütün Standart nümunələrini yoxla
+            for (const pattern of productPatterns.standart) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["standart"] = pattern;
               }
             }
 
-            if (!explicitCategoryFound) {
-              for (const pattern of productPatterns.oem) {
-                if (normalizedBlockText.includes(normalizeText(pattern))) {
-                  foundCategories.add("oem");
-                }
-              }
-              for (const pattern of productPatterns.premium) {
-                if (normalizedBlockText.includes(normalizeText(pattern))) {
-                  foundCategories.add("premium");
-                }
-              }
-              for (const pattern of productPatterns.standart) {
-                if (normalizedBlockText.includes(normalizeText(pattern))) {
-                  foundCategories.add("standart");
-                }
-              }
-            }
-
-            if (foundCategories.size > 0) {
+            if (Object.keys(foundMatches).length > 0) {
               const potentialMatches = [];
               for (let k = 1; k < sheet2.length; k++) {
                 const sheet2Row = sheet2[k];
@@ -587,20 +559,22 @@
 
               if (bestMatchRow) {
                 const sheet2ProductName = bestMatchRow[1];
-                foundCategories.forEach((category) => {
+                // DƏYİŞİKLİK: Uyğun gələn hər kateqoriya üçün dövr edirik
+                for (const category in foundMatches) {
+                  const matchedPattern = foundMatches[category]; // Uyğun gələn konkret sözü alırıq
                   const categoryData = generateSingleRowCategoryData(
                     headerRow,
                     bestMatchRow,
                     category,
                     sheet2ProductName,
-                    bestMatchRow[3] || ""
+                    matchedPattern // Konkret sözü funksiyaya ötürürük
                   );
                   processedData[category].push(categoryData);
 
                   if (!categoryProducts[category]) {
                     categoryProducts[category] = sheet2ProductName;
                   }
-                });
+                }
               }
             }
 
@@ -614,19 +588,14 @@
         sheet2Row,
         category,
         productName,
-        specificationType
+        matchedPattern // DƏYİŞİKLİK: Ötürülən açar sözü qəbul edir
       ) {
         const productId = sheet2Row[0] || `AL/EO-0001`;
         const engineOil = "Engine oil";
         const pcmo = "Passenger car motor oil (PCMO)";
-        let specType = "";
-        if (category === "oem") {
-          specType = "Top Quality";
-        } else if (category === "premium") {
-          specType = "Premium";
-        } else {
-          specType = "Standart";
-        }
+
+        // DƏYİŞİKLİK: "Spesifikasiyanın tipi" birbaşa uyğun gələn açar söz olur
+        const specType = matchedPattern;
 
         const singleRow = [
           productId,
@@ -636,10 +605,9 @@
           productId,
           productName,
           `${productName}`,
-          specType,
+          specType, // Spesifikasiya tipi olaraq konkret açar sözü yazırıq
         ];
 
-        // DƏYİŞİKLİK: Məlumat strukturunu başlıqlarla uyğunlaşdır
         literSizes.forEach((literSize) => {
           materials.forEach((material) => {
             singleRow.push(material);
@@ -653,7 +621,6 @@
 
         return singleRow;
       }
-
       function normalizeText(text) {
         if (!text) return "";
         return text
