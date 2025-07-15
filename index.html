@@ -423,8 +423,7 @@
       const allProductSizes = [...literSizes, ...kiloSizes];
 
       const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
-      // Base oils will be dynamically loaded from sheet1
-      let allMaterials = [...packagingMaterials]; // Will be updated with dynamic base oils
+      let allMaterials = [...packagingMaterials]; 
 
       document
         .getElementById("fileInput")
@@ -450,7 +449,6 @@
       function extractDynamicBaseOils(sheet1) {
         const baseOils = new Set();
 
-        // Look for base oils in column 2 (index 2)
         for (let i = 1; i < sheet1.length; i++) {
           const row = sheet1[i];
           if (!row) continue;
@@ -458,13 +456,11 @@
           const code = row[2];
           if (code && typeof code === "string") {
             const trimmedCode = code.trim();
-            // Check if it's a potential base oil code (typically 2-3 uppercase letters)
             if (
               trimmedCode.length >= 2 &&
               trimmedCode.length <= 3 &&
               /^[A-Z]+$/.test(trimmedCode)
             ) {
-              // Exclude known packaging materials
               if (!packagingMaterials.includes(trimmedCode)) {
                 baseOils.add(trimmedCode);
               }
@@ -494,7 +490,6 @@
               workbook.Sheets[workbook.SheetNames[1]]
             );
 
-            // Extract dynamic base oils from sheet1
             dynamicBaseOils = extractDynamicBaseOils(sheet1);
             allMaterials = [...packagingMaterials, ...dynamicBaseOils];
 
@@ -512,7 +507,6 @@
             document.getElementById("downloadBtn").disabled = false;
             showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
 
-            // Debug info
             console.log("Dynamic base oils found:", dynamicBaseOils);
           } catch (error) {
             showStatus(
@@ -713,7 +707,6 @@
           Palet: "1.14x1.14",
         };
 
-        // For dynamic base oils, return default characteristic
         if (dynamicBaseOils.includes(material)) {
           return "<Xarakteristika yoxdur>";
         }
