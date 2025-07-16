@@ -589,11 +589,6 @@
         categoryProducts.premium = "";
         categoryProducts.oem = "";
 
-        // Sheet2'nin başlık satırını alalım ki karşılaştırma yapabilelim
-        const sheet2Header = sheet2[0] || [];
-        const sheet2HeaderId = (sheet2Header[0] || "").toLowerCase().trim();
-        const sheet2HeaderName = (sheet2Header[1] || "").toLowerCase().trim();
-
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
           if (!headerRow) continue;
@@ -645,33 +640,14 @@
               }
             }
 
-            if (Object.keys(foundMatches).length === 0) {
-              foundMatches["standart"] = "standart (default)";
-            }
-
             if (Object.keys(foundMatches).length > 0) {
               const potentialMatches = [];
               for (let k = 1; k < sheet2.length; k++) {
                 const sheet2Row = sheet2[k];
-                // Satırın boş veya ürün adı içermediğinden emin olalım
-                if (!sheet2Row || !sheet2Row[1]) continue;
-
-                // --- YENİ GÜVENLİK KONTROLÜ ---
-                // Bu satırın bir başlık satırı olmadığından emin olalım
-                const currentRowId = (sheet2Row[0] || "").toLowerCase().trim();
-                const currentRowName = (sheet2Row[1] || "")
-                  .toLowerCase()
-                  .trim();
-                if (
-                  currentRowId === sheet2HeaderId &&
-                  currentRowName === sheet2HeaderName
-                ) {
-                  continue; // Bu bir başlık satırı, atla
-                }
-                // --- KONTROL SONU ---
-
+                if (!sheet2Row) continue;
                 const sheet2ProductName = sheet2Row[1];
                 if (
+                  sheet2ProductName &&
                   normalizeText(sheet2ProductName).includes(
                     normalizeText(productNameInBlock)
                   )
@@ -702,9 +678,7 @@
                     matchedPattern,
                     additivesData
                   );
-                  if (processedData[category]) {
-                    processedData[category].push(categoryData);
-                  }
+                  processedData[category].push(categoryData);
 
                   if (!categoryProducts[category]) {
                     categoryProducts[category] = sheet2ProductName;
