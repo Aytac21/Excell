@@ -213,6 +213,32 @@
         margin: 0 0 10px 0;
         color: #9c27b0;
       }
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+      }
+      .pagination button {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .pagination button:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .pagination span {
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -300,11 +326,13 @@
       <div id="sheet1" class="tab-content active">
         <h2>Sheet1 - Məhsul Məlumatları</h2>
         <table id="sheet1Table"></table>
+        <div class="pagination" id="sheet1Pagination"></div>
       </div>
 
       <div id="sheet2" class="tab-content">
         <h2>Sheet2 - Material Spesifikasiyaları</h2>
         <table id="sheet2Table"></table>
+        <div class="pagination" id="sheet2Pagination"></div>
       </div>
 
       <div id="standart" class="tab-content">
@@ -314,6 +342,7 @@
           <p id="standartProduct"></p>
         </div>
         <table id="standartTable"></table>
+        <div class="pagination" id="standartPagination"></div>
       </div>
 
       <div id="premium" class="tab-content">
@@ -323,6 +352,7 @@
           <p id="premiumProduct"></p>
         </div>
         <table id="premiumTable"></table>
+        <div class="pagination" id="premiumPagination"></div>
       </div>
 
       <div id="oem" class="tab-content">
@@ -332,6 +362,7 @@
           <p id="oemProduct"></p>
         </div>
         <table id="oemTable"></table>
+        <div class="pagination" id="oemPagination"></div>
       </div>
 
       <button
@@ -423,7 +454,17 @@
       const allProductSizes = [...literSizes, ...kiloSizes];
 
       const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
-      let allMaterials = [...packagingMaterials]; 
+      let allMaterials = [...packagingMaterials];
+
+      // Pagination variables
+      const rowsPerPage = 15;
+      let currentPage = {
+        sheet1: 1,
+        sheet2: 1,
+        standart: 1,
+        premium: 1,
+        oem: 1,
+      };
 
       document
         .getElementById("fileInput")
@@ -443,6 +484,7 @@
           }
           result.push(row);
         }
+        // console.log("Sheet converted to array of arrays:", result);
         return result;
       }
 
@@ -490,6 +532,8 @@
               workbook.Sheets[workbook.SheetNames[1]]
             );
 
+            // console.log("Sheet1 data:", sheet1);
+
             dynamicBaseOils = extractDynamicBaseOils(sheet1);
             allMaterials = [...packagingMaterials, ...dynamicBaseOils];
 
@@ -498,11 +542,30 @@
             processedData.sheet1 = sheet1;
             processedData.sheet2 = sheet2;
             categorizeProducts(sheet1, sheet2);
-            displayTable("sheet1Table", sheet1);
-            displayTable("sheet2Table", sheet2);
-            displayCategoryTable("standartTable", processedData.standart);
-            displayCategoryTable("premiumTable", processedData.premium);
-            displayCategoryTable("oemTable", processedData.oem);
+
+            // Reset to first page for all tabs after file upload
+            for (const key in currentPage) {
+              currentPage[key] = 1;
+            }
+
+            displayTableWithPagination("sheet1Table", "sheet1", sheet1);
+            displayTableWithPagination("sheet2Table", "sheet2", sheet2);
+            displayCategoryTableWithPagination(
+              "standartTable",
+              "standart",
+              processedData.standart
+            );
+            displayCategoryTableWithPagination(
+              "premiumTable",
+              "premium",
+              processedData.premium
+            );
+            displayCategoryTableWithPagination(
+              "oemTable",
+              "oem",
+              processedData.oem
+            );
+
             updateCategoryInfo();
             document.getElementById("downloadBtn").disabled = false;
             showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
@@ -525,6 +588,11 @@
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
+
+        // Sheet2'nin başlık satırını alalım ki karşılaştırma yapabilelim
+        const sheet2Header = sheet2[0] || [];
+        const sheet2HeaderId = (sheet2Header[0] || "").toLowerCase().trim();
+        const sheet2HeaderName = (sheet2Header[1] || "").toLowerCase().trim();
 
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
@@ -577,14 +645,33 @@
               }
             }
 
+            if (Object.keys(foundMatches).length === 0) {
+              foundMatches["standart"] = "standart (default)";
+            }
+
             if (Object.keys(foundMatches).length > 0) {
               const potentialMatches = [];
               for (let k = 1; k < sheet2.length; k++) {
                 const sheet2Row = sheet2[k];
-                if (!sheet2Row) continue;
+                // Satırın boş veya ürün adı içermediğinden emin olalım
+                if (!sheet2Row || !sheet2Row[1]) continue;
+
+                // --- YENİ GÜVENLİK KONTROLÜ ---
+                // Bu satırın bir başlık satırı olmadığından emin olalım
+                const currentRowId = (sheet2Row[0] || "").toLowerCase().trim();
+                const currentRowName = (sheet2Row[1] || "")
+                  .toLowerCase()
+                  .trim();
+                if (
+                  currentRowId === sheet2HeaderId &&
+                  currentRowName === sheet2HeaderName
+                ) {
+                  continue; // Bu bir başlık satırı, atla
+                }
+                // --- KONTROL SONU ---
+
                 const sheet2ProductName = sheet2Row[1];
                 if (
-                  sheet2ProductName &&
                   normalizeText(sheet2ProductName).includes(
                     normalizeText(productNameInBlock)
                   )
@@ -615,7 +702,9 @@
                     matchedPattern,
                     additivesData
                   );
-                  processedData[category].push(categoryData);
+                  if (processedData[category]) {
+                    processedData[category].push(categoryData);
+                  }
 
                   if (!categoryProducts[category]) {
                     categoryProducts[category] = sheet2ProductName;
@@ -728,74 +817,6 @@
         });
       }
 
-      function displayTable(tableId, data) {
-        const table = document.getElementById(tableId);
-        if (!data || data.length === 0) {
-          table.innerHTML =
-            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
-          return;
-        }
-        let html = "";
-        data.forEach((row, index) => {
-          html += "<tr>";
-          (row || []).forEach((cell) => {
-            const tag = index === 0 ? "th" : "td";
-            const displayValue = processCell(cell);
-            html += `<${tag}>${displayValue}</${tag}>`;
-          });
-          html += "</tr>";
-        });
-        table.innerHTML = html;
-      }
-
-      function displayCategoryTable(tableId, data) {
-        const table = document.getElementById(tableId);
-        if (!data || data.length === 0) {
-          table.innerHTML =
-            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
-          return;
-        }
-
-        let html = "<tr>";
-        const headers = [
-          "ID",
-          "Engine oil",
-          "PCMO",
-          "Məhsulun ID",
-          "Məhsulun adı",
-          "Spesifikasıyanın adı",
-          "Spesifikasıyanın tipi",
-        ];
-
-        allProductSizes.forEach((size) => {
-          allMaterials.forEach((material) => {
-            const formattedSize = size.endsWith("L")
-              ? size.replace("L", " L")
-              : size.replace("kg", " kg");
-            headers.push(`Material (${formattedSize} - ${material})`);
-            headers.push(`Xarakteristika (${formattedSize} - ${material})`);
-            headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
-            headers.push(`Miqdar (${formattedSize} - ${material})`);
-          });
-        });
-
-        headers.forEach((header) => {
-          html += `<th>${header}</th>`;
-        });
-        html += "</tr>";
-
-        data.forEach((row) => {
-          html += "<tr>";
-          (row || []).forEach((cell) => {
-            const displayValue = processCell(cell);
-            html += `<td>${displayValue}</td>`;
-          });
-          html += "</tr>";
-        });
-
-        table.innerHTML = html;
-      }
-
       function processCell(cell) {
         if (cell === undefined || cell === null || cell === "") {
           return "-";
@@ -814,6 +835,38 @@
         document.getElementById(tabName).classList.add("active");
         if (element) {
           element.classList.add("active");
+        }
+        // Re-display the current tab's content to apply pagination
+        if (tabName === "sheet1") {
+          displayTableWithPagination(
+            "sheet1Table",
+            "sheet1",
+            processedData.sheet1
+          );
+        } else if (tabName === "sheet2") {
+          displayTableWithPagination(
+            "sheet2Table",
+            "sheet2",
+            processedData.sheet2
+          );
+        } else if (tabName === "standart") {
+          displayCategoryTableWithPagination(
+            "standartTable",
+            "standart",
+            processedData.standart
+          );
+        } else if (tabName === "premium") {
+          displayCategoryTableWithPagination(
+            "premiumTable",
+            "premium",
+            processedData.premium
+          );
+        } else if (tabName === "oem") {
+          displayCategoryTableWithPagination(
+            "oemTable",
+            "oem",
+            processedData.oem
+          );
         }
       }
 
@@ -869,6 +922,8 @@
             return [headers, ...data];
           };
 
+          console.log(processedData);
+
           if (processedData.standart.length > 0) {
             const standartWithHeaders = createSheetWithHeaders(
               processedData.standart
@@ -894,6 +949,177 @@
           showStatus(
             "Excel faylı yaradılarkən xəta: " + error.message,
             "error"
+          );
+        }
+      }
+
+      // --- Pagination Functions ---
+
+      function displayTableWithPagination(tableId, dataKey, allData) {
+        const table = document.getElementById(tableId);
+        const paginationDiv = document.getElementById(`${dataKey}Pagination`);
+
+        if (!allData || allData.length === 0) {
+          table.innerHTML =
+            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
+          paginationDiv.innerHTML = "";
+          return;
+        }
+
+        const totalRows =
+          allData.length -
+          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0); // Subtract header row for original sheets
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        const startRowIndex =
+          (currentPage[dataKey] - 1) * rowsPerPage +
+          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0); // Adjust for header
+        const endRowIndex = Math.min(
+          startRowIndex + rowsPerPage,
+          allData.length
+        );
+
+        let dataToDisplay = allData.slice(startRowIndex, endRowIndex);
+        let headers = [];
+
+        if (dataKey === "sheet1" || dataKey === "sheet2") {
+          headers = allData[0] || [];
+          if (allData.length > 0) {
+            // Add back the header for display
+            dataToDisplay = [headers, ...dataToDisplay];
+          }
+        }
+
+        let html = "";
+        dataToDisplay.forEach((row, index) => {
+          html += "<tr>";
+          (row || []).forEach((cell) => {
+            const tag =
+              (dataKey === "sheet1" || dataKey === "sheet2") && index === 0
+                ? "th"
+                : "td";
+            const displayValue = processCell(cell);
+            html += `<${tag}>${displayValue}</${tag}>`;
+          });
+          html += "</tr>";
+        });
+        table.innerHTML = html;
+        renderPaginationControls(paginationDiv, dataKey, totalPages);
+      }
+
+      function displayCategoryTableWithPagination(tableId, dataKey, allData) {
+        const table = document.getElementById(tableId);
+        const paginationDiv = document.getElementById(`${dataKey}Pagination`);
+
+        if (!allData || allData.length === 0) {
+          table.innerHTML =
+            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
+          paginationDiv.innerHTML = "";
+          return;
+        }
+
+        const totalRows = allData.length;
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        const startRowIndex = (currentPage[dataKey] - 1) * rowsPerPage;
+        const endRowIndex = Math.min(
+          startRowIndex + rowsPerPage,
+          allData.length
+        );
+
+        const dataToDisplay = allData.slice(startRowIndex, endRowIndex);
+
+        let html = "<tr>";
+        const headers = [
+          "ID",
+          "Engine oil",
+          "PCMO",
+          "Məhsulun ID",
+          "Məhsulun adı",
+          "Spesifikasıyanın adı",
+          "Spesifikasıyanın tipi",
+        ];
+
+        allProductSizes.forEach((size) => {
+          allMaterials.forEach((material) => {
+            const formattedSize = size.endsWith("L")
+              ? size.replace("L", " L")
+              : size.replace("kg", " kg");
+            headers.push(`Material (${formattedSize} - ${material})`);
+            headers.push(`Xarakteristika (${formattedSize} - ${material})`);
+            headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
+            headers.push(`Miqdar (${formattedSize} - ${material})`);
+          });
+        });
+
+        headers.forEach((header) => {
+          html += `<th>${header}</th>`;
+        });
+        html += "</tr>";
+
+        dataToDisplay.forEach((row) => {
+          html += "<tr>";
+          (row || []).forEach((cell) => {
+            const displayValue = processCell(cell);
+            html += `<td>${displayValue}</td>`;
+          });
+          html += "</tr>";
+        });
+
+        table.innerHTML = html;
+        renderPaginationControls(paginationDiv, dataKey, totalPages);
+      }
+
+      function renderPaginationControls(paginationDiv, dataKey, totalPages) {
+        paginationDiv.innerHTML = "";
+        if (totalPages <= 1) return;
+
+        const prevButton = document.createElement("button");
+        prevButton.textContent = "Əvvəlki";
+        prevButton.disabled = currentPage[dataKey] === 1;
+        prevButton.onclick = () => changePage(dataKey, -1);
+        paginationDiv.appendChild(prevButton);
+
+        const pageSpan = document.createElement("span");
+        pageSpan.textContent = `Səhifə ${currentPage[dataKey]} / ${totalPages}`;
+        paginationDiv.appendChild(pageSpan);
+
+        const nextButton = document.createElement("button");
+        nextButton.textContent = "Növbəti";
+        nextButton.disabled = currentPage[dataKey] === totalPages;
+        nextButton.onclick = () => changePage(dataKey, 1);
+        paginationDiv.appendChild(nextButton);
+      }
+
+      function changePage(dataKey, direction) {
+        currentPage[dataKey] += direction;
+        if (dataKey === "sheet1") {
+          displayTableWithPagination(
+            "sheet1Table",
+            "sheet1",
+            processedData.sheet1
+          );
+        } else if (dataKey === "sheet2") {
+          displayTableWithPagination(
+            "sheet2Table",
+            "sheet2",
+            processedData.sheet2
+          );
+        } else if (dataKey === "standart") {
+          displayCategoryTableWithPagination(
+            "standartTable",
+            "standart",
+            processedData.standart
+          );
+        } else if (dataKey === "premium") {
+          displayCategoryTableWithPagination(
+            "premiumTable",
+            "premium",
+            processedData.premium
+          );
+        } else if (dataKey === "oem") {
+          displayCategoryTableWithPagination(
+            "oemTable",
+            "oem",
+            processedData.oem
           );
         }
       }
