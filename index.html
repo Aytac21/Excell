@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Engine Oil Excel Data Processor</title>
@@ -241,140 +241,222 @@
       }
     </style>
   </head>
+   
   <body>
+               
     <div class="container">
+                       
       <h1>🛢️ Engine Oil Excel Data Processor</h1>
 
+                       
       <div class="info-box">
+                               
         <div class="product-type">Excel Fayl Emal Sistemi</div>
+                               
         <p>
-          Bu sistem all_products.xlsx faylından məlumatları oxuyur və 5 ayrı
-          sheet-ə ayırır: Sheet1, Sheet2, Standart, Premium, OEM.
+                              Bu sistem all_products.xlsx faylından məlumatları
+          oxuyur və           5 ayrı           sheet-ə ayırır: Sheet1, Sheet2,
+          Standart, Premium,           OEM.                
         </p>
+                           
       </div>
 
+                       
       <div class="column-info">
+                               
         <h3>Sheet1 Sütunları</h3>
+                               
         <div class="column-list">
-          <strong>Əsas Sütunlar:</strong> ID, Product name, Engine oil,
-          Passenger car motor oil (PCMO), 1L, 1.5L, 4L, 5L, 6L, 7L, 10L, 18L
-          <br />
-          <strong>Məhsul Adları:</strong> Aminol™ Special Generation SLG1 0W-20
-          SP/GF-6A
-          <br />
-          <strong>Məhsul Təyinatı:</strong> Bidon (Açıq göy), Qapaq (Qırmızı
-          falqa), Etiket (Orqinal), Qutu (Kıpaj), Palet
+                              <strong>Əsas Sütunlar:</strong> ID, Product name,
+          Engine           oil,           Passenger car motor oil (PCMO), 1L,
+          1.5L, 4L, 5L, 6L,           7L, 10L, 18L           <br />
+                              <strong>Məhsul Adları:</strong> Aminol™ Special
+          Generation           SLG1 0W-20           SP/GF-6A           <br />
+                              <strong>Məhsul Təyinatı:</strong> Bidon (Açıq
+          göy), Qapaq           (Qırmızı           falqa), Etiket (Orqinal),
+          Qutu (Kıpaj), Palet                          
         </div>
+                           
       </div>
 
+                       
       <div class="column-info">
+                               
         <h3>Sheet2 Sütunları</h3>
+                               
         <div class="column-list">
-          <strong>Əsas Sütunlar:</strong> Məhsulun ID, Məhsulun adı,
-          Spesifikasıyanın adı, Spesifikasıyanın tipi, Material, Xarakteristika,
-          Ölçü vahidi, Miqdar, Material, Xarakteristika
+                              <strong>Əsas Sütunlar:</strong> Məhsulun ID,
+          Məhsulun adı,                     Spesifikasıyanın adı,
+          Spesifikasıyanın tipi, Material,           Xarakteristika,          
+          Ölçü vahidi, Miqdar, Material,           Xarakteristika          
           <br />
-          <strong>Materiallar:</strong> Bidon (1LT Açıq Göy Aminol), Qapaq
-          (Qırmızı), Etiket (Aminol Special Generation), Qutu (Kıpaj), Palet,
-          BE, GT, PA, SX, ZX
+                              <strong>Materiallar:</strong> Bidon (1LT Açıq Göy
+          Aminol),           Qapaq           (Qırmızı), Etiket (Aminol Special
+          Generation), Qutu           (Kıpaj), Palet,           BE, GT, PA, SX,
+          ZX                
         </div>
+                           
       </div>
 
+                       
       <div class="column-info">
+                               
         <h3>Kateqoriya Məhsulları</h3>
+                               
         <div class="column-list">
-          <strong>Standart:</strong> Standart keyfiyyət məhsulları
+                              <strong>Standart:</strong> Standart keyfiyyət
+          məhsulları                     <br />
+                              <strong>Premium:</strong> ILSAC GF-6A, GF-6B, GF-5
+          və API           SP, SN Plus           keyfiyyət məhsulları          
           <br />
-          <strong>Premium:</strong> ILSAC GF-6A, GF-6B, GF-5 və API SP, SN Plus
-          keyfiyyət məhsulları
-          <br />
-          <strong>OEM:</strong> 0W-20 SP/GF-6A və Top Quality yüksək keyfiyyət
-          məhsulları
+                              <strong>OEM:</strong> 0W-20 SP/GF-6A və Top
+          Quality yüksək           keyfiyyət           məhsulları              
+           
         </div>
+                           
       </div>
 
+                       
       <div class="file-upload">
-        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                       
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />                
         <label for="fileInput" class="file-upload-label">
-          📁 all_products.xlsx faylını seçin
+                              📁 all_products.xlsx faylını seçin                
         </label>
+                               
         <div class="status" id="status"></div>
+                           
       </div>
 
+                       
       <div id="debugInfo" class="debug-info" style="display: none">
+                               
         <h3>Debug Info</h3>
+                               
         <div id="debugContent"></div>
+                           
       </div>
 
+                       
       <div id="patternMatch" class="pattern-match" style="display: none">
+                               
         <h3>Pattern Matching Results</h3>
+                               
         <div id="patternContent"></div>
+                           
       </div>
 
+                       
       <div class="tabs">
+                               
         <button class="tab active" onclick="showTab('sheet1', this)">
-          Sheet1
+                              Sheet1                
         </button>
-        <button class="tab" onclick="showTab('sheet2', this)">Sheet2</button>
+                               
+        <button class="tab" onclick="showTab('sheet2', this)">Sheet2</button>  
+                             
         <button class="tab" onclick="showTab('standart', this)">
-          Standart
+                              Standart                
         </button>
+                               
         <button class="tab" onclick="showTab('premium', this)">Premium</button>
-        <button class="tab" onclick="showTab('oem', this)">OEM</button>
+                               
+        <button class="tab" onclick="showTab('oem', this)">OEM</button>        
+           
       </div>
 
+                       
       <div id="sheet1" class="tab-content active">
+                               
         <h2>Sheet1 - Məhsul Məlumatları</h2>
+                               
         <table id="sheet1Table"></table>
+                               
         <div class="pagination" id="sheet1Pagination"></div>
+                           
       </div>
 
+                       
       <div id="sheet2" class="tab-content">
+                               
         <h2>Sheet2 - Material Spesifikasiyaları</h2>
+                               
         <table id="sheet2Table"></table>
+                               
         <div class="pagination" id="sheet2Pagination"></div>
+                           
       </div>
 
+                       
       <div id="standart" class="tab-content">
+                               
         <h2>Standart Məhsullar</h2>
+                               
         <div id="standartInfo" class="category-info" style="display: none">
+                                       
           <h3>Standart Məhsul</h3>
+                                       
           <p id="standartProduct"></p>
+                                   
         </div>
+                               
         <table id="standartTable"></table>
+                               
         <div class="pagination" id="standartPagination"></div>
+                           
       </div>
 
+                       
       <div id="premium" class="tab-content">
+                               
         <h2>Premium Məhsullar</h2>
+                               
         <div id="premiumInfo" class="category-info" style="display: none">
+                                       
           <h3>Premium Məhsul</h3>
+                                       
           <p id="premiumProduct"></p>
+                                   
         </div>
+                               
         <table id="premiumTable"></table>
+                               
         <div class="pagination" id="premiumPagination"></div>
+                           
       </div>
 
+                       
       <div id="oem" class="tab-content">
+                               
         <h2>OEM Məhsullar</h2>
+                               
         <div id="oemInfo" class="category-info" style="display: none">
+                                       
           <h3>OEM Məhsul</h3>
+                                       
           <p id="oemProduct"></p>
+                                   
         </div>
+                               
         <table id="oemTable"></table>
+                               
         <div class="pagination" id="oemPagination"></div>
+                           
       </div>
 
+                       
       <button
         class="download-btn"
         id="downloadBtn"
         onclick="downloadExcel()"
         disabled
       >
-        📥 Yeni Excel Faylını Yüklə
+                        📥 Yeni Excel Faylını Yüklə            
       </button>
+                   
     </div>
 
+               
     <script>
       let processedData = {
         sheet1: [],
@@ -392,7 +474,100 @@
 
       let originalSheet1 = [];
       let originalSheet2 = [];
-      let dynamicBaseOils = []; // Dynamic base oils from sheet1
+      let dynamicBaseOils = [];
+
+      const productNameMap = {
+        "2t ta": "2T",
+        "4t 10w-40 ma": "4T 10W-40",
+        "to-4 sae 10w": "TO-4 10W",
+        "to4 sae 5w-30": "TO-4 5W-30",
+        "atf dexron ii": "ATF DX-IID",
+        "atf dexron iii": "ATF DX-IIIH",
+        "atf sp iv": "ATF SP-IV",
+        "atf vi": "Aminol™ ATF DX-VI, Aminol™ ATF T-IV",
+        "atf v": "ATF Mercon V",
+        "synthetic gear oil 68": "GearSynth 68",
+        "synthetic gear oil 100": "GearSynth 100",
+        "synthetic gear oil 150": "GearSynth 150",
+        "synthetic gear oil 220": "GearSynth 220",
+        "synthetic gear oil 320": "GearSynth 320",
+        "synthetic gear oil 460": "GearSynth 460",
+        "synthetic gear oil 680": "GearSynth 680",
+        "slideway oil 32": "SlideFlow 32",
+        "slideway oil 46": "SlideFlow 46",
+        "slideway oil 68": "SlideFlow 68",
+        "slideway oil 100": "SlideFlow 100",
+        "slideway oil 150": "SlideFlow 150",
+        "slideway oil 220": "SlideFlow 220",
+        "slideway oil 320": "SlideFlow 320",
+        "compressor oil 32": "AirTec 32",
+        "compressor oil 46": "AirTec 46",
+        "compressor oil 68": "AirTec 68",
+        "compressor oil 100": "AirTec 100",
+        "compressor oil 150": "AirTec 150",
+        "compressor oil 220": "AirTec 220",
+        "compressor oil 320": "AirTec 320",
+        "compressor oil vdl 46": "AirTec VDL 46",
+        "compressor oil vdl 68": "AirTec VDL 68",
+        "compressor oil vdl 100": "AirTec VDL 100",
+        "compressor oil vdl 150": "AirTec VDL 150",
+        "compressor oil vdl 220": "AirTec VDL 220",
+        "compressor oil vdl 320": "AirTec VDL 320",
+        "m 10dm sae 30 api cd гост 8581-78": "M-10DM",
+        "m 10g2k sae 30 api cc гост 8581-78": "M-10G2K",
+        "м-14в2 гост 12337-84": "M-14B2",
+        "м-20в2": "M-20B2",
+        "m 14g2k sae 40 api cc гост 8581-78": "M-14G2K",
+        "m14d2 -tbn gosta gore dusuk": "M-14D2",
+        "80w90 gl-4": "80W-90 GL-4",
+        "75w90 gl-4": "75W-90 GL-4",
+        "85w140 gl-5": "85W-140 GL-5",
+        "75w90 gl-5": "75W-90 GL-5",
+        "75w80 gl-4": "75W-80 GL-4",
+        "75w80 gl-5": "75W-80 GL-5",
+        "ep 90 gl-1": "90 GL-1",
+        "transmission 80w-90 gl-5 ls": "Transmission 80W-90 LS GL-5",
+        "transmission 85w-90 gl-5 ls": "Transmission 85W-90 LS GL-5",
+        "synthetic transmission 75w-140 gl-5 ls":
+          "Transmission 75W-140 LS GL-5",
+        "transmission 85w140 gl-5 ls": "Transmission 85W-140 LS GL-5",
+        "hydraulic oil 32": "Hydraulic 32",
+        "hydraulic oil 46": "Hydraulic 46",
+        "hydraulic oil 68": "Hydraulic 68",
+        "hydraulic oil 100": "Hydraulic 100",
+        "hydraulic oil 150": "Hydraulic 150",
+        "hydraulic oil 220": "Hydraulic 220",
+        "hydraulic oil 320": "Hydraulic 320",
+        "hvlp 15 din 51524 part 3": "Hydraulic HVLP 15",
+        "hvlp 22 din 51524 part 3": "Hydraulic HVLP 22",
+        "hvlp 32 din 51524 part 3": "Hydraulic HVLP 32",
+        "hvlp 46 din 51524 part 3": "Hydraulic HVLP 46",
+        "hvlp 68 din 51524 part 3": "Hydraulic HVLP 68",
+        "hvlp 100 din 51524 part 3": "Hydraulic HVLP 100",
+        "hvlp 150 din 51524 part 3": "Hydraulic HVLP 150",
+        "hydraulic oil 22 din 51524 part ii": "Hydraulic HLP 22",
+        "hydraulic oil 32 din 51524 part ii": "Hydraulic HLP 32",
+        "hydraulic oil 46 din 51524 part ii": "Hydraulic HLP 46",
+        "hydraulic oil 68 din 51524 part ii": "Hydraulic HLP 68",
+        "hydraulic oil 100 din 51524 part ii": "Hydraulic HLP 100",
+        "hydraulic oil 150 din 51524 part ii": "Hydraulic HLP 150",
+        "hydraulic oil 220 din 51524 part ii": "Hydraulic HLP 220",
+        "hydraulic oil 320 din 51524 part ii": "Hydraulic HLP 320",
+        "hydraulic oil 22 zn free": "Hydraulic HLP 22 Zinc Free",
+        "hydraulic oil 32 zn free": "Hydraulic HLP 32 Zinc Free",
+        "hydraulic oil 46 zn free": "Hydraulic HLP 46 Zinc Free",
+        "hydraulic oil 68 zn free": "Hydraulic HLP 68 Zinc Free",
+        "hydraulic oil 100 zn free": "Hydraulic HLP 100 Zinc Free",
+        "hvlp 22 zn free": "Hydraulic HVLP 22 Zinc Free",
+        "hvlp 32 zn free": "Hydraulic HVLP 32 Zinc Free",
+        "hvlp 46 zn free": "Hydraulic HVLP 46 Zinc Free",
+        "hvlp 68 zn free": "Hydraulic HVLP 68 Zinc Free",
+        "antifreeze pink blue green red ready g12 -40":
+          "Antifreeze G11 Ready Mix -40°C",
+        "antifreeze pink blue green oncantrate": "Antifreeze G11 Concentrate",
+        "antifreeze long life concantrate": "Antifreeze G12+ Concentrate",
+        "antifreeze long life 50 ready": "Antifreeze G12+ Ready Mix -40°C",
+      };
 
       const productPatterns = {
         oem: ["top quality", "premium - top quality", "premium-top quality"],
@@ -456,8 +631,7 @@
       const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
       let allMaterials = [...packagingMaterials];
 
-      // Pagination variables
-      const rowsPerPage = 15;
+      const rowsPerPage = 10;
       let currentPage = {
         sheet1: 1,
         sheet2: 1,
@@ -484,7 +658,6 @@
           }
           result.push(row);
         }
-        // console.log("Sheet converted to array of arrays:", result);
         return result;
       }
 
@@ -516,23 +689,24 @@
       function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = function (e) {
           try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
+
             if (workbook.SheetNames.length < 2) {
               showStatus("Fayl ən azı 2 sheet-ə malik olmalıdır!", "error");
               return;
             }
+
             const sheet1 = sheetToArrayOfArrays(
               workbook.Sheets[workbook.SheetNames[0]]
             );
             const sheet2 = sheetToArrayOfArrays(
               workbook.Sheets[workbook.SheetNames[1]]
             );
-
-            // console.log("Sheet1 data:", sheet1);
 
             dynamicBaseOils = extractDynamicBaseOils(sheet1);
             allMaterials = [...packagingMaterials, ...dynamicBaseOils];
@@ -541,9 +715,9 @@
             originalSheet2 = sheet2;
             processedData.sheet1 = sheet1;
             processedData.sheet2 = sheet2;
-            categorizeProducts(sheet1, sheet2);
 
-            // Reset to first page for all tabs after file upload
+            categorizeProducts(sheet1, sheet2); // Reset to first page for all tabs after file upload
+
             for (const key in currentPage) {
               currentPage[key] = 1;
             }
@@ -569,8 +743,6 @@
             updateCategoryInfo();
             document.getElementById("downloadBtn").disabled = false;
             showStatus("Fayl uğurla yükləndi və emal edildi!", "success");
-
-            console.log("Dynamic base oils found:", dynamicBaseOils);
           } catch (error) {
             showStatus(
               "Fayl oxunarkən xəta baş verdi: " + error.message,
@@ -592,6 +764,7 @@
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
           if (!headerRow) continue;
+
           const productNameInBlock = headerRow[1];
           const isProductBlockHeader = productNameInBlock && headerRow[2];
 
@@ -603,13 +776,16 @@
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
               if (!currentRow) continue;
+
               if (j > i && currentRow[1] && currentRow[2]) {
                 break;
               }
+
               blockEndIndex = j;
               if (currentRow[1]) {
                 blockText += " " + currentRow[1];
               }
+
               const additiveCode = currentRow[2];
               const additivePercent = currentRow[3];
               if (
@@ -641,22 +817,28 @@
             }
 
             if (Object.keys(foundMatches).length > 0) {
+              // === YENİ VƏ DÜZGÜN MƏNTİQ BAŞLAYIR ===
+
+              // 1. Sheet1-dən gələn adı açar kimi istifadə edərək map-dən standart adı tapın.
+              const normalizedMapKey = normalizeText(productNameInBlock);
+              const finalProductName =
+                productNameMap[normalizedMapKey] || productNameInBlock; // 2. Bu standart ad ilə Sheet2-də axtarış edin.
+
+              const normalizedSearchName = normalizeText(finalProductName);
+              let bestMatchRow = null;
               const potentialMatches = [];
+
               for (let k = 1; k < sheet2.length; k++) {
                 const sheet2Row = sheet2[k];
-                if (!sheet2Row) continue;
-                const sheet2ProductName = sheet2Row[1];
-                if (
-                  sheet2ProductName &&
-                  normalizeText(sheet2ProductName).includes(
-                    normalizeText(productNameInBlock)
-                  )
-                ) {
+                if (!sheet2Row || !sheet2Row[1]) continue;
+
+                const sheet2ProductName = normalizeText(sheet2Row[1]); // Axtarış: Sheet2-dəki rəsmi adın tərkibində bizim standart ad varmı?
+
+                if (sheet2ProductName.includes(normalizedSearchName)) {
                   potentialMatches.push(sheet2Row);
                 }
               }
 
-              let bestMatchRow = null;
               if (potentialMatches.length === 1) {
                 bestMatchRow = potentialMatches[0];
               } else if (potentialMatches.length > 1) {
@@ -664,33 +846,31 @@
                   (a, b) => (a[1] || "").length - (b[1] || "").length
                 );
                 bestMatchRow = potentialMatches[0];
-              }
+              } // 3. Əgər uyğun məhsul tapılıbsa, məlumatları kateqoriyalara əlavə edin.
 
               if (bestMatchRow) {
-                const sheet2ProductName = bestMatchRow[1];
                 for (const category in foundMatches) {
                   const matchedPattern = foundMatches[category];
                   const categoryData = generateSingleRowCategoryData(
                     headerRow,
                     bestMatchRow,
                     category,
-                    sheet2ProductName,
+                    finalProductName, // Artıq təyin edilmiş standart adı istifadə et
                     matchedPattern,
                     additivesData
                   );
                   processedData[category].push(categoryData);
 
                   if (!categoryProducts[category]) {
-                    categoryProducts[category] = sheet2ProductName;
+                    categoryProducts[category] = finalProductName;
                   }
                 }
-              }
+              } // === YENİ MƏNTİQ BİTİR ===
             }
             i = blockEndIndex;
           }
         }
       }
-
       function generateSingleRowCategoryData(
         sheet1Row,
         sheet2Row,
@@ -753,6 +933,7 @@
           .replace(/ö/g, "o")
           .replace(/ç/g, "c")
           .replace(/ə/g, "e")
+          .replace(/\r\n/g, " ")
           .replace(/[^\w\s-]/g, " ")
           .replace(/\s+/g, " ")
           .trim();
@@ -804,13 +985,15 @@
       function showTab(tabName, element) {
         const contents = document.querySelectorAll(".tab-content");
         contents.forEach((content) => content.classList.remove("active"));
+
         const tabs = document.querySelectorAll(".tab");
         tabs.forEach((tab) => tab.classList.remove("active"));
+
         document.getElementById(tabName).classList.add("active");
         if (element) {
           element.classList.add("active");
-        }
-        // Re-display the current tab's content to apply pagination
+        } // Re-display the current tab's content to apply pagination
+
         if (tabName === "sheet1") {
           displayTableWithPagination(
             "sheet1Table",
@@ -861,12 +1044,15 @@
           showStatus("Əvvəlcə fayl yükləyin!", "error");
           return;
         }
+
         try {
           const wb = XLSX.utils.book_new();
+
           if (processedData.sheet1.length > 0) {
             const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
             XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
           }
+
           if (processedData.sheet2.length > 0) {
             const ws2 = XLSX.utils.aoa_to_sheet(processedData.sheet2);
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
@@ -882,6 +1068,7 @@
               "Spesifikasıyanın adı",
               "Spesifikasıyanın tipi",
             ];
+
             allProductSizes.forEach((size) => {
               allMaterials.forEach((material) => {
                 const formattedSize = size.endsWith("L")
@@ -893,10 +1080,9 @@
                 headers.push(`Miqdar (${formattedSize} - ${material})`);
               });
             });
+
             return [headers, ...data];
           };
-
-          console.log(processedData);
 
           if (processedData.standart.length > 0) {
             const standartWithHeaders = createSheetWithHeaders(
@@ -905,6 +1091,7 @@
             const ws3 = XLSX.utils.aoa_to_sheet(standartWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws3, "Standart");
           }
+
           if (processedData.premium.length > 0) {
             const premiumWithHeaders = createSheetWithHeaders(
               processedData.premium
@@ -912,11 +1099,13 @@
             const ws4 = XLSX.utils.aoa_to_sheet(premiumWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws4, "Premium");
           }
+
           if (processedData.oem.length > 0) {
             const oemWithHeaders = createSheetWithHeaders(processedData.oem);
             const ws5 = XLSX.utils.aoa_to_sheet(oemWithHeaders);
             XLSX.utils.book_append_sheet(wb, ws5, "OEM");
           }
+
           XLSX.writeFile(wb, "Processed_Engine_Oil_Data.xlsx");
           showStatus("Excel faylı uğurla yükləndi!", "success");
         } catch (error) {
@@ -925,9 +1114,7 @@
             "error"
           );
         }
-      }
-
-      // --- Pagination Functions ---
+      } // --- Pagination Functions ---
 
       function displayTableWithPagination(tableId, dataKey, allData) {
         const table = document.getElementById(tableId);
@@ -942,11 +1129,11 @@
 
         const totalRows =
           allData.length -
-          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0); // Subtract header row for original sheets
+          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0);
         const totalPages = Math.ceil(totalRows / rowsPerPage);
         const startRowIndex =
           (currentPage[dataKey] - 1) * rowsPerPage +
-          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0); // Adjust for header
+          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0);
         const endRowIndex = Math.min(
           startRowIndex + rowsPerPage,
           allData.length
@@ -958,7 +1145,6 @@
         if (dataKey === "sheet1" || dataKey === "sheet2") {
           headers = allData[0] || [];
           if (allData.length > 0) {
-            // Add back the header for display
             dataToDisplay = [headers, ...dataToDisplay];
           }
         }
@@ -976,6 +1162,7 @@
           });
           html += "</tr>";
         });
+
         table.innerHTML = html;
         renderPaginationControls(paginationDiv, dataKey, totalPages);
       }
@@ -1098,5 +1285,6 @@
         }
       }
     </script>
+           
   </body>
 </html>
