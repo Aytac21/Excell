@@ -716,7 +716,7 @@
             processedData.sheet1 = sheet1;
             processedData.sheet2 = sheet2;
 
-            categorizeProducts(sheet1, sheet2); // Reset to first page for all tabs after file upload
+            categorizeProducts(sheet1, sheet2);
 
             for (const key in currentPage) {
               currentPage[key] = 1;
@@ -760,6 +760,8 @@
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
+
+        const processedProductIds = new Set(); // Track processed product IDs to prevent duplicates
 
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
@@ -816,61 +818,96 @@
               }
             }
 
-            if (Object.keys(foundMatches).length > 0) {
-              // === YENİ VƏ DÜZGÜN MƏNTİQ BAŞLAYIR ===
+            const normalizedMapKey = normalizeText(productNameInBlock);
+            const searchName =
+              productNameMap[normalizedMapKey] || productNameInBlock;
+            const normalizedSearchName = normalizeText(searchName);
 
-              // 1. Sheet1-dən gələn adı açar kimi istifadə edərək map-dən standart adı tapın.
-              const normalizedMapKey = normalizeText(productNameInBlock);
-              const finalProductName =
-                productNameMap[normalizedMapKey] || productNameInBlock; // 2. Bu standart ad ilə Sheet2-də axtarış edin.
+            let bestMatchRow = null;
+            const potentialMatches = [];
+            for (let k = 1; k < sheet2.length; k++) {
+              const sheet2Row = sheet2[k];
 
-              const normalizedSearchName = normalizeText(finalProductName);
-              let bestMatchRow = null;
-              const potentialMatches = [];
-
-              for (let k = 1; k < sheet2.length; k++) {
-                const sheet2Row = sheet2[k];
-                if (!sheet2Row || !sheet2Row[1]) continue;
-
-                const sheet2ProductName = normalizeText(sheet2Row[1]); // Axtarış: Sheet2-dəki rəsmi adın tərkibində bizim standart ad varmı?
-
-                if (sheet2ProductName.includes(normalizedSearchName)) {
-                  potentialMatches.push(sheet2Row);
-                }
+              const productIdFromSheet2 = sheet2Row ? sheet2Row[0] : undefined;
+              if (
+                !sheet2Row ||
+                !sheet2Row[1] ||
+                !productIdFromSheet2 ||
+                productIdFromSheet2.toString().toLowerCase() === "id"
+              ) {
+                continue;
               }
 
-              if (potentialMatches.length === 1) {
-                bestMatchRow = potentialMatches[0];
-              } else if (potentialMatches.length > 1) {
-                potentialMatches.sort(
-                  (a, b) => (a[1] || "").length - (b[1] || "").length
-                );
-                bestMatchRow = potentialMatches[0];
-              } // 3. Əgər uyğun məhsul tapılıbsa, məlumatları kateqoriyalara əlavə edin.
+              const sheet2ProductName = normalizeText(sheet2Row[1]);
+              if (sheet2ProductName.includes(normalizedSearchName)) {
+                potentialMatches.push(sheet2Row);
+              }
+            }
 
-              if (bestMatchRow) {
-                for (const category in foundMatches) {
-                  const matchedPattern = foundMatches[category];
-                  const categoryData = generateSingleRowCategoryData(
-                    headerRow,
-                    bestMatchRow,
-                    category,
-                    finalProductName, // Artıq təyin edilmiş standart adı istifadə et
-                    matchedPattern,
-                    additivesData
-                  );
-                  processedData[category].push(categoryData);
+            if (potentialMatches.length === 1) {
+              bestMatchRow = potentialMatches[0];
+            } else if (potentialMatches.length > 1) {
+              potentialMatches.sort(
+                (a, b) => (a[1] || "").length - (b[1] || "").length
+              );
+              bestMatchRow = potentialMatches[0];
+            }
 
-                  if (!categoryProducts[category]) {
-                    categoryProducts[category] = finalProductName;
+            if (bestMatchRow) {
+              const productId = bestMatchRow[0];
+
+              // Check if this product ID has already been processed
+              if (!processedProductIds.has(productId)) {
+                const finalProductName = bestMatchRow[1];
+                const numMatches = Object.keys(foundMatches).length;
+
+                if (numMatches <= 1) {
+                  const categoriesToAdd = ["standart", "premium", "oem"];
+                  const matchedPattern =
+                    numMatches === 1
+                      ? Object.values(foundMatches)[0]
+                      : "Təyin edilməyib";
+
+                  categoriesToAdd.forEach((category) => {
+                    const categoryData = generateSingleRowCategoryData(
+                      headerRow,
+                      bestMatchRow,
+                      category,
+                      finalProductName,
+                      matchedPattern,
+                      additivesData
+                    );
+                    processedData[category].push(categoryData);
+                    if (!categoryProducts[category]) {
+                      categoryProducts[category] = finalProductName;
+                    }
+                  });
+                } else {
+                  for (const category in foundMatches) {
+                    const matchedPattern = foundMatches[category];
+                    const categoryData = generateSingleRowCategoryData(
+                      headerRow,
+                      bestMatchRow,
+                      category,
+                      finalProductName,
+                      matchedPattern,
+                      additivesData
+                    );
+                    processedData[category].push(categoryData);
+                    if (!categoryProducts[category]) {
+                      categoryProducts[category] = finalProductName;
+                    }
                   }
                 }
-              } // === YENİ MƏNTİQ BİTİR ===
+                // Mark this product ID as processed
+                processedProductIds.add(productId);
+              }
             }
             i = blockEndIndex;
           }
         }
       }
+
       function generateSingleRowCategoryData(
         sheet1Row,
         sheet2Row,
@@ -992,7 +1029,7 @@
         document.getElementById(tabName).classList.add("active");
         if (element) {
           element.classList.add("active");
-        } // Re-display the current tab's content to apply pagination
+        }
 
         if (tabName === "sheet1") {
           displayTableWithPagination(
@@ -1114,7 +1151,7 @@
             "error"
           );
         }
-      } // --- Pagination Functions ---
+      }
 
       function displayTableWithPagination(tableId, dataKey, allData) {
         const table = document.getElementById(tableId);
@@ -1285,6 +1322,5 @@
         }
       }
     </script>
-           
   </body>
 </html>
