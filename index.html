@@ -243,220 +243,226 @@
   </head>
    
   <body>
-               
+                       
     <div class="container">
-                       
+                                   
       <h1>🛢️ Engine Oil Excel Data Processor</h1>
 
-                       
+                                   
       <div class="info-box">
-                               
+                                               
         <div class="product-type">Excel Fayl Emal Sistemi</div>
-                               
+                                               
         <p>
-                              Bu sistem all_products.xlsx faylından məlumatları
-          oxuyur və           5 ayrı           sheet-ə ayırır: Sheet1, Sheet2,
-          Standart, Premium,           OEM.                
+                                        Bu sistem all_products.xlsx faylından
+          məlumatları           oxuyur və           5 ayrı           sheet-ə
+          ayırır: Sheet1, Sheet2,           Standart, Premium,           OEM.  
+                               
         </p>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div class="column-info">
-                               
+                                               
         <h3>Sheet1 Sütunları</h3>
-                               
+                                               
         <div class="column-list">
-                              <strong>Əsas Sütunlar:</strong> ID, Product name,
-          Engine           oil,           Passenger car motor oil (PCMO), 1L,
-          1.5L, 4L, 5L, 6L,           7L, 10L, 18L           <br />
-                              <strong>Məhsul Adları:</strong> Aminol™ Special
-          Generation           SLG1 0W-20           SP/GF-6A           <br />
-                              <strong>Məhsul Təyinatı:</strong> Bidon (Açıq
-          göy), Qapaq           (Qırmızı           falqa), Etiket (Orqinal),
-          Qutu (Kıpaj), Palet                          
+                                        <strong>Əsas Sütunlar:</strong> ID,
+          Product name,           Engine           oil,           Passenger car
+          motor oil (PCMO), 1L,           1.5L, 4L, 5L, 6L,           7L, 10L,
+          18L           <br />
+                                        <strong>Məhsul Adları:</strong> Aminol™
+          Special           Generation           SLG1 0W-20           SP/GF-6A  
+                  <br />
+                                        <strong>Məhsul Təyinatı:</strong> Bidon
+          (Açıq           göy), Qapaq           (Qırmızı           falqa),
+          Etiket (Orqinal),           Qutu (Kıpaj), Palet                      
+                     
         </div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div class="column-info">
-                               
+                                               
         <h3>Sheet2 Sütunları</h3>
-                               
+                                               
         <div class="column-list">
-                              <strong>Əsas Sütunlar:</strong> Məhsulun ID,
-          Məhsulun adı,                     Spesifikasıyanın adı,
-          Spesifikasıyanın tipi, Material,           Xarakteristika,          
-          Ölçü vahidi, Miqdar, Material,           Xarakteristika          
-          <br />
-                              <strong>Materiallar:</strong> Bidon (1LT Açıq Göy
-          Aminol),           Qapaq           (Qırmızı), Etiket (Aminol Special
-          Generation), Qutu           (Kıpaj), Palet,           BE, GT, PA, SX,
-          ZX                
+                                        <strong>Əsas Sütunlar:</strong> Məhsulun
+          ID,           Məhsulun adı,                     Spesifikasıyanın adı,
+                    Spesifikasıyanın tipi, Material,           Xarakteristika,  
+                            Ölçü vahidi, Miqdar, Material,          
+          Xarakteristika                     <br />
+                                        <strong>Materiallar:</strong> Bidon (1LT
+          Açıq Göy           Aminol),           Qapaq           (Qırmızı),
+          Etiket (Aminol Special           Generation), Qutu           (Kıpaj),
+          Palet,           BE, GT, PA, SX,           ZX                        
         </div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div class="column-info">
-                               
+                                               
         <h3>Kateqoriya Məhsulları</h3>
-                               
+                                               
         <div class="column-list">
-                              <strong>Standart:</strong> Standart keyfiyyət
+                                        <strong>Standart:</strong> Standart
+          keyfiyyət           məhsulları                     <br />
+                                        <strong>Premium:</strong> ILSAC GF-6A,
+          GF-6B, GF-5           və API           SP, SN Plus           keyfiyyət
           məhsulları                     <br />
-                              <strong>Premium:</strong> ILSAC GF-6A, GF-6B, GF-5
-          və API           SP, SN Plus           keyfiyyət məhsulları          
-          <br />
-                              <strong>OEM:</strong> 0W-20 SP/GF-6A və Top
-          Quality yüksək           keyfiyyət           məhsulları              
-           
+                                        <strong>OEM:</strong> 0W-20 SP/GF-6A və
+          Top           Quality yüksək           keyfiyyət           məhsulları
+                                           
         </div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div class="file-upload">
-                       
+                                       
         <input type="file" id="fileInput" accept=".xlsx,.xls" />                
+               
         <label for="fileInput" class="file-upload-label">
-                              📁 all_products.xlsx faylını seçin                
+                                        📁 all_products.xlsx faylını seçin      
+                           
         </label>
-                               
+                                               
         <div class="status" id="status"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div id="debugInfo" class="debug-info" style="display: none">
-                               
+                                               
         <h3>Debug Info</h3>
-                               
+                                               
         <div id="debugContent"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div id="patternMatch" class="pattern-match" style="display: none">
-                               
+                                               
         <h3>Pattern Matching Results</h3>
-                               
+                                               
         <div id="patternContent"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div class="tabs">
-                               
+                                               
         <button class="tab active" onclick="showTab('sheet1', this)">
-                              Sheet1                
+                                        Sheet1                        
         </button>
-                               
+                                               
         <button class="tab" onclick="showTab('sheet2', this)">Sheet2</button>  
-                             
+                                             
         <button class="tab" onclick="showTab('standart', this)">
-                              Standart                
+                                        Standart                        
         </button>
-                               
+                                               
         <button class="tab" onclick="showTab('premium', this)">Premium</button>
-                               
+                                               
         <button class="tab" onclick="showTab('oem', this)">OEM</button>        
-           
+                         
       </div>
 
-                       
+                                   
       <div id="sheet1" class="tab-content active">
-                               
+                                               
         <h2>Sheet1 - Məhsul Məlumatları</h2>
-                               
+                                               
         <table id="sheet1Table"></table>
-                               
+                                               
         <div class="pagination" id="sheet1Pagination"></div>
-                           
+                          _BOS_            
       </div>
 
-                       
+                                   
       <div id="sheet2" class="tab-content">
-                               
+                                               
         <h2>Sheet2 - Material Spesifikasiyaları</h2>
-                               
+                                               
         <table id="sheet2Table"></table>
-                               
+                                               
         <div class="pagination" id="sheet2Pagination"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div id="standart" class="tab-content">
-                               
+                                               
         <h2>Standart Məhsullar</h2>
-                               
+                                               
         <div id="standartInfo" class="category-info" style="display: none">
-                                       
+                                                           
           <h3>Standart Məhsul</h3>
-                                       
+                                                           
           <p id="standartProduct"></p>
-                                   
+                                                     
         </div>
-                               
+                                               
         <table id="standartTable"></table>
-                               
+                                               
         <div class="pagination" id="standartPagination"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div id="premium" class="tab-content">
-                               
+                                               
         <h2>Premium Məhsullar</h2>
-                               
+                                               
         <div id="premiumInfo" class="category-info" style="display: none">
-                                       
+                                                           
           <h3>Premium Məhsul</h3>
-                                       
+                                                           
           <p id="premiumProduct"></p>
-                                   
+                                                     
         </div>
-                               
+                                               
         <table id="premiumTable"></table>
-                               
+                                               
         <div class="pagination" id="premiumPagination"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <div id="oem" class="tab-content">
-                               
+                                               
         <h2>OEM Məhsullar</h2>
-                               
+                                               
         <div id="oemInfo" class="category-info" style="display: none">
-                                       
+                                                           
           <h3>OEM Məhsul</h3>
-                                       
+                                                           
           <p id="oemProduct"></p>
-                                   
+                                                     
         </div>
-                               
+                                               
         <table id="oemTable"></table>
-                               
+                                               
         <div class="pagination" id="oemPagination"></div>
-                           
+                                         
       </div>
 
-                       
+                                   
       <button
         class="download-btn"
         id="downloadBtn"
         onclick="downloadExcel()"
         disabled
       >
-                        📥 Yeni Excel Faylını Yüklə            
+                                📥 Yeni Excel Faylını Yüklə                  
       </button>
-                   
+                             
     </div>
 
-               
+                       
     <script>
       let processedData = {
         sheet1: [],
@@ -854,9 +860,8 @@
             }
 
             if (bestMatchRow) {
-              const productId = bestMatchRow[0];
+              const productId = bestMatchRow[0]; // Check if this product ID has already been processed
 
-              // Check if this product ID has already been processed
               if (!processedProductIds.has(productId)) {
                 const finalProductName = bestMatchRow[1];
                 const numMatches = Object.keys(foundMatches).length;
@@ -898,8 +903,7 @@
                       categoryProducts[category] = finalProductName;
                     }
                   }
-                }
-                // Mark this product ID as processed
+                } // Mark this product ID as processed
                 processedProductIds.add(productId);
               }
             }
@@ -921,15 +925,7 @@
         const pcmo = "Passenger car motor oil (PCMO)";
         const specType = matchedPattern;
 
-        const singleRow = [
-          productId,
-          engineOil,
-          pcmo,
-          productId,
-          productName,
-          `${productName}`,
-          specType,
-        ];
+        const singleRow = [productId, engineOil, pcmo, productName];
 
         allProductSizes.forEach((size) => {
           allMaterials.forEach((material) => {
@@ -1096,15 +1092,7 @@
           }
 
           const createSheetWithHeaders = (data) => {
-            const headers = [
-              "ID",
-              "Engine oil",
-              "PCMO",
-              "Məhsulun ID",
-              "Məhsulun adı",
-              "Spesifikasıyanın adı",
-              "Spesifikasıyanın tipi",
-            ];
+            const headers = ["ID", "Engine oil", "PCMO", "Məhsulun adı"];
 
             allProductSizes.forEach((size) => {
               allMaterials.forEach((material) => {
@@ -1226,15 +1214,7 @@
         const dataToDisplay = allData.slice(startRowIndex, endRowIndex);
 
         let html = "<tr>";
-        const headers = [
-          "ID",
-          "Engine oil",
-          "PCMO",
-          "Məhsulun ID",
-          "Məhsulun adı",
-          "Spesifikasıyanın adı",
-          "Spesifikasıyanın tipi",
-        ];
+        const headers = ["ID", "Engine oil", "PCMO", "Məhsulun adı"];
 
         allProductSizes.forEach((size) => {
           allMaterials.forEach((material) => {
@@ -1322,5 +1302,6 @@
         }
       }
     </script>
+     
   </body>
 </html>
