@@ -379,7 +379,7 @@
         <table id="sheet1Table"></table>
                                                
         <div class="pagination" id="sheet1Pagination"></div>
-                          _BOS_            
+                                         
       </div>
 
                                    
@@ -921,11 +921,8 @@
         additivesData
       ) {
         const productId = sheet2Row[0] || `AL/EO-0001`;
-        const engineOil = "Engine oil";
-        const pcmo = "Passenger car motor oil (PCMO)";
-        const specType = matchedPattern;
 
-        const singleRow = [productId, engineOil, pcmo, productName];
+        const singleRow = [productId, productName];
 
         allProductSizes.forEach((size) => {
           allMaterials.forEach((material) => {
@@ -1033,6 +1030,7 @@
             "sheet1",
             processedData.sheet1
           );
+          _BOS_;
         } else if (tabName === "sheet2") {
           displayTableWithPagination(
             "sheet2Table",
@@ -1092,7 +1090,7 @@
           }
 
           const createSheetWithHeaders = (data) => {
-            const headers = ["ID", "Engine oil", "PCMO", "Məhsulun adı"];
+            const headers = ["ID", "Məhsulun adı"];
 
             allProductSizes.forEach((size) => {
               allMaterials.forEach((material) => {
@@ -1214,7 +1212,7 @@
         const dataToDisplay = allData.slice(startRowIndex, endRowIndex);
 
         let html = "<tr>";
-        const headers = ["ID", "Engine oil", "PCMO", "Məhsulun adı"];
+        const headers = ["ID", "Məhsulun adı"];
 
         allProductSizes.forEach((size) => {
           allMaterials.forEach((material) => {
