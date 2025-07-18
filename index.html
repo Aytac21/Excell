@@ -767,7 +767,18 @@
         categoryProducts.premium = "";
         categoryProducts.oem = "";
 
-        const processedProductIds = new Set(); // Track processed product IDs to prevent duplicates
+        const processedProductIds = new Set();
+
+        const headerRowForSizes = sheet1[0] || [];
+        const sizeColumnMap = {};
+        allProductSizes.forEach((size) => {
+          const columnIndex = headerRowForSizes.findIndex(
+            (header) => header && header.trim() === size
+          );
+          if (columnIndex !== -1) {
+            sizeColumnMap[size] = columnIndex;
+          }
+        });
 
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
@@ -780,6 +791,7 @@
             let blockText = "";
             let blockEndIndex = i;
             let additivesData = {};
+            let blockCharacteristics = {};
 
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
@@ -792,6 +804,25 @@
               blockEndIndex = j;
               if (currentRow[1]) {
                 blockText += " " + currentRow[1];
+
+                const cellValue = currentRow[1].trim();
+                let materialName = null;
+                for (const mat of packagingMaterials) {
+                  if (cellValue.startsWith(mat)) {
+                    materialName = mat;
+                    break;
+                  }
+                }
+
+                if (materialName) {
+                  blockCharacteristics[materialName] = {};
+                  for (const size in sizeColumnMap) {
+                    const columnIndex = sizeColumnMap[size];
+                    const characteristic = currentRow[columnIndex];
+                    blockCharacteristics[materialName][size] =
+                      characteristic || "-";
+                  }
+                }
               }
 
               const additiveCode = currentRow[2];
@@ -833,7 +864,6 @@
             const potentialMatches = [];
             for (let k = 1; k < sheet2.length; k++) {
               const sheet2Row = sheet2[k];
-
               const productIdFromSheet2 = sheet2Row ? sheet2Row[0] : undefined;
               if (
                 !sheet2Row ||
@@ -843,7 +873,6 @@
               ) {
                 continue;
               }
-
               const sheet2ProductName = normalizeText(sheet2Row[1]);
               if (sheet2ProductName.includes(normalizedSearchName)) {
                 potentialMatches.push(sheet2Row);
@@ -860,50 +889,40 @@
             }
 
             if (bestMatchRow) {
-              const productId = bestMatchRow[0]; // Check if this product ID has already been processed
-
+              const productId = bestMatchRow[0];
               if (!processedProductIds.has(productId)) {
                 const finalProductName = bestMatchRow[1];
                 const numMatches = Object.keys(foundMatches).length;
 
+                const processCategory = (category, matchedPattern) => {
+                  const categoryData = generateSingleRowCategoryData(
+                    headerRow,
+                    bestMatchRow,
+                    category,
+                    finalProductName,
+                    matchedPattern,
+                    additivesData,
+                    blockCharacteristics
+                  );
+                  processedData[category].push(categoryData);
+                  if (!categoryProducts[category]) {
+                    categoryProducts[category] = finalProductName;
+                  }
+                };
+
                 if (numMatches <= 1) {
-                  const categoriesToAdd = ["standart", "premium", "oem"];
                   const matchedPattern =
                     numMatches === 1
                       ? Object.values(foundMatches)[0]
                       : "Təyin edilməyib";
-
-                  categoriesToAdd.forEach((category) => {
-                    const categoryData = generateSingleRowCategoryData(
-                      headerRow,
-                      bestMatchRow,
-                      category,
-                      finalProductName,
-                      matchedPattern,
-                      additivesData
-                    );
-                    processedData[category].push(categoryData);
-                    if (!categoryProducts[category]) {
-                      categoryProducts[category] = finalProductName;
-                    }
-                  });
+                  ["standart", "premium", "oem"].forEach((cat) =>
+                    processCategory(cat, matchedPattern)
+                  );
                 } else {
                   for (const category in foundMatches) {
-                    const matchedPattern = foundMatches[category];
-                    const categoryData = generateSingleRowCategoryData(
-                      headerRow,
-                      bestMatchRow,
-                      category,
-                      finalProductName,
-                      matchedPattern,
-                      additivesData
-                    );
-                    processedData[category].push(categoryData);
-                    if (!categoryProducts[category]) {
-                      categoryProducts[category] = finalProductName;
-                    }
+                    processCategory(category, foundMatches[category]);
                   }
-                } // Mark this product ID as processed
+                }
                 processedProductIds.add(productId);
               }
             }
@@ -918,37 +937,101 @@
         category,
         productName,
         matchedPattern,
-        additivesData
+        additivesData,
+        blockCharacteristics
       ) {
-        const productId = sheet2Row[0] || `AL/EO-0001`;
+        const productId = sheet2Row[0] || `AL/EO-0001`; // Yalnız bu məhsul üçün mövcud olan materialları və onların miqdarını saxlayırıq. // Bu, həm qatqıları (additivesData), həm də qablaşdırma materiallarını (blockCharacteristics) əhatə edir.
+        const materialValues = {}; // Qatqıları (additives) emal edirik
 
-        const singleRow = [productId, productName];
+        for (const material in additivesData) {
+          if (Object.hasOwnProperty.call(additivesData, material)) {
+            materialValues[material] = {
+              miqdar: additivesData[material],
+              olcu_vahidi: "faiz",
+            };
+          }
+        } // Bu funksiya artıq bir sətir məlumatı obyekt kimi qaytarır
 
-        allProductSizes.forEach((size) => {
-          allMaterials.forEach((material) => {
-            singleRow.push(material);
-            const isAdditive = dynamicBaseOils.includes(material);
+        return {
+          productId: productId,
+          productName: productName,
+          materials: materialValues, // { DS: { miqdar: 0.35, olcu_vahidi: 'faiz' }, ML: { ... } }
+        };
+      }
 
-            if (isAdditive) {
-              const percentage = additivesData[material];
-              singleRow.push("<Xarakteristika yoxdur>");
-              singleRow.push("faiz");
-              if (percentage) {
-                singleRow.push(`${percentage}%`);
-              } else {
-                singleRow.push("-");
-              }
-            } else {
-              singleRow.push(
-                getMaterialCharacteristic(material, size, productName)
-              );
-              singleRow.push("adəd");
-              singleRow.push("1");
-            }
-          });
+      function displayCategoryTableWithPagination(tableId, dataKey, allData) {
+        const table = document.getElementById(tableId);
+        const paginationDiv = document.getElementById(`${dataKey}Pagination`);
+
+        if (!allData || allData.length === 0) {
+          table.innerHTML =
+            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
+          paginationDiv.innerHTML = "";
+          return;
+        } // Göstəriləcək məlumatlar içərisindəki bütün unikal materialları tapırıq
+
+        const activeMaterials = new Set();
+        allData.forEach((row) => {
+          if (row.materials) {
+            Object.keys(row.materials).forEach((material) =>
+              activeMaterials.add(material)
+            );
+          }
         });
+        const materialHeaders = Array.from(activeMaterials).sort();
 
-        return singleRow;
+        const totalRows = allData.length;
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        const startRowIndex = (currentPage[dataKey] - 1) * rowsPerPage;
+        const endRowIndex = Math.min(
+          startRowIndex + rowsPerPage,
+          allData.length
+        );
+
+        const dataToDisplay = allData.slice(startRowIndex, endRowIndex); // Cədvəl başlığını (header) dinamik olaraq qururuq
+
+        let html = "<thead><tr>";
+        html += "<th>Məhsulun ID</th>";
+        html += "<th>Məhsulun adı</th>"; // Hər bir material üçün 3 sütun əlavə edirik (Material, Ölçü Vahidi, Miqdar)
+        const maxMaterialGroups = Math.max(
+          ...dataToDisplay.map((row) =>
+            row.materials ? Object.keys(row.materials).length : 0
+          ),
+          0
+        );
+        for (let i = 1; i <= maxMaterialGroups; i++) {
+          html += `<th>MATERIAL ${i}</th>`;
+          html += `<th>ÖLÇÜ VAHIDI ${i}</th>`;
+          html += `<th>MIQDAR ${i}</th>`;
+        }
+
+        html += "</tr></thead>"; // Cədvəl məlumatlarını (body) qururuq
+        html += "<tbody>";
+        dataToDisplay.forEach((row) => {
+          html += "<tr>";
+          html += `<td>${processCell(row.productId)}</td>`;
+          html += `<td>${processCell(row.productName)}</td>`;
+          const productMaterials = row.materials
+            ? Object.keys(row.materials).sort()
+            : [];
+          let materialCount = 0;
+          productMaterials.forEach((material) => {
+            const details = row.materials[material];
+            html += `<td>${processCell(material)}</td>`;
+            html += `<td>${processCell(details.olcu_vahidi)}</td>`;
+            html += `<td>${processCell(details.miqdar)}</td>`;
+            materialCount++;
+          }); // Əgər məhsulun material sayı maksimumdan azdırsa, boş xanalarla tamamlayırıq
+          for (let i = materialCount; i < maxMaterialGroups; i++) {
+            html += "<td>-</td><td>-</td><td>-</td>";
+          }
+
+          html += "</tr>";
+        });
+        html += "</tbody>";
+
+        table.innerHTML = html;
+        renderPaginationControls(paginationDiv, dataKey, totalPages);
       }
 
       function normalizeText(text) {
@@ -969,11 +1052,33 @@
           .trim();
       }
 
-      function getMaterialCharacteristic(material, size, productName) {
+      function getMaterialCharacteristic(
+        material,
+        size,
+        productName,
+        blockCharacteristics
+      ) {
+        // New Logic: Try to get the dynamic characteristic from the parsed data first
+        if (
+          blockCharacteristics &&
+          blockCharacteristics[material] &&
+          blockCharacteristics[material][size]
+        ) {
+          const dynamicValue = blockCharacteristics[material][size];
+          if (
+            dynamicValue &&
+            dynamicValue.trim() !== "-" &&
+            dynamicValue.trim() !== ""
+          ) {
+            return dynamicValue;
+          }
+        }
+
+        // Fallback Logic: Use the original hardcoded template if no specific data is found
         const formattedSize = size.endsWith("L")
           ? size.replace("L", " L")
           : size.replace("kg", " kg");
-        const characteristics = {
+        const fallbackCharacteristics = {
           Bidon: `${formattedSize} Açıq Göy Aminol (öz istehsal)`,
           Qapaq: `Qırmızı ${formattedSize} (50/22 telescopic)`,
           Etiket: `${productName} (BK-06)`,
@@ -985,7 +1090,7 @@
           return "<Xarakteristika yoxdur>";
         }
 
-        return characteristics[material] || `${material} ${formattedSize}`;
+        return fallbackCharacteristics[material] || `${material} ${size}`;
       }
 
       function updateCategoryInfo() {
@@ -1024,13 +1129,13 @@
           element.classList.add("active");
         }
 
+        // Note: The erroneous '_BOS_;' line has been removed from here.
         if (tabName === "sheet1") {
           displayTableWithPagination(
             "sheet1Table",
             "sheet1",
             processedData.sheet1
           );
-          _BOS_;
         } else if (tabName === "sheet2") {
           displayTableWithPagination(
             "sheet2Table",
@@ -1089,48 +1194,77 @@
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
           }
 
-          const createSheetWithHeaders = (data) => {
-            const headers = ["ID", "Məhsulun adı"];
+          // Kateqoriya vərəqlərini (sheets) yaratmaq üçün köməkçi funksiya
+          const createCategorySheet = (data) => {
+            if (!data || data.length === 0) return null;
 
+            // Başlıqları dinamik olaraq hazırlayırıq
+            const additiveHeaders = new Set();
+            data.forEach((row) => {
+              if (row.additives) {
+                Object.keys(row.additives).forEach((material) =>
+                  additiveHeaders.add(material)
+                );
+              }
+            });
+            const sortedAdditiveHeaders = Array.from(additiveHeaders).sort();
+
+            const packagingHeadersData = [];
             allProductSizes.forEach((size) => {
-              allMaterials.forEach((material) => {
-                const formattedSize = size.endsWith("L")
-                  ? size.replace("L", " L")
-                  : size.replace("kg", " kg");
-                headers.push(`Material (${formattedSize} - ${material})`);
-                headers.push(`Xarakteristika (${formattedSize} - ${material})`);
-                headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
-                headers.push(`Miqdar (${formattedSize} - ${material})`);
+              packagingMaterials.forEach((pkgMaterial) => {
+                packagingHeadersData.push({ size, material: pkgMaterial });
               });
             });
 
-            return [headers, ...data];
+            const allHeaders = [
+              "Məhsulun ID",
+              "Məhsulun adı",
+              ...sortedAdditiveHeaders.map((h) => `${h} (faiz)`),
+              ...packagingHeadersData.map((h) => `${h.material} (${h.size})`),
+            ];
+
+            // Məlumat sətirlərini hazırlayırıq
+            const dataRows = data.map((row) => {
+              const rowArray = [row.productId, row.productName];
+
+              // Qatqı dəyərləri
+              sortedAdditiveHeaders.forEach((header) => {
+                const value =
+                  row.additives && row.additives[header]
+                    ? row.additives[header]
+                    : "-";
+                rowArray.push(processCell(value));
+              });
+
+              // Qablaşdırma dəyərləri
+              packagingHeadersData.forEach((h) => {
+                const value =
+                  row.packaging &&
+                  row.packaging[h.material] &&
+                  row.packaging[h.material][h.size]
+                    ? row.packaging[h.material][h.size]
+                    : "-";
+                rowArray.push(processCell(value));
+              });
+
+              return rowArray;
+            });
+
+            return XLSX.utils.aoa_to_sheet([allHeaders, ...dataRows]);
           };
 
-          if (processedData.standart.length > 0) {
-            const standartWithHeaders = createSheetWithHeaders(
-              processedData.standart
-            );
-            const ws3 = XLSX.utils.aoa_to_sheet(standartWithHeaders);
-            XLSX.utils.book_append_sheet(wb, ws3, "Standart");
-          }
+          const wsStandart = createCategorySheet(processedData.standart);
+          if (wsStandart)
+            XLSX.utils.book_append_sheet(wb, wsStandart, "Standart");
 
-          if (processedData.premium.length > 0) {
-            const premiumWithHeaders = createSheetWithHeaders(
-              processedData.premium
-            );
-            const ws4 = XLSX.utils.aoa_to_sheet(premiumWithHeaders);
-            XLSX.utils.book_append_sheet(wb, ws4, "Premium");
-          }
+          const wsPremium = createCategorySheet(processedData.premium);
+          if (wsPremium) XLSX.utils.book_append_sheet(wb, wsPremium, "Premium");
 
-          if (processedData.oem.length > 0) {
-            const oemWithHeaders = createSheetWithHeaders(processedData.oem);
-            const ws5 = XLSX.utils.aoa_to_sheet(oemWithHeaders);
-            XLSX.utils.book_append_sheet(wb, ws5, "OEM");
-          }
+          const wsOem = createCategorySheet(processedData.oem);
+          if (wsOem) XLSX.utils.book_append_sheet(wb, wsOem, "OEM");
 
           XLSX.writeFile(wb, "Processed_Engine_Oil_Data.xlsx");
-          showStatus("Excel faylı uğurla yükləndi!", "success");
+          showStatus("Excel faylı uğurla yaradıldı!", "success");
         } catch (error) {
           showStatus(
             "Excel faylı yaradılarkən xəta: " + error.message,
@@ -1182,60 +1316,6 @@
                 : "td";
             const displayValue = processCell(cell);
             html += `<${tag}>${displayValue}</${tag}>`;
-          });
-          html += "</tr>";
-        });
-
-        table.innerHTML = html;
-        renderPaginationControls(paginationDiv, dataKey, totalPages);
-      }
-
-      function displayCategoryTableWithPagination(tableId, dataKey, allData) {
-        const table = document.getElementById(tableId);
-        const paginationDiv = document.getElementById(`${dataKey}Pagination`);
-
-        if (!allData || allData.length === 0) {
-          table.innerHTML =
-            '<tr><td colspan="100%">Məlumat tapılmadı</td></tr>';
-          paginationDiv.innerHTML = "";
-          return;
-        }
-
-        const totalRows = allData.length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        const startRowIndex = (currentPage[dataKey] - 1) * rowsPerPage;
-        const endRowIndex = Math.min(
-          startRowIndex + rowsPerPage,
-          allData.length
-        );
-
-        const dataToDisplay = allData.slice(startRowIndex, endRowIndex);
-
-        let html = "<tr>";
-        const headers = ["ID", "Məhsulun adı"];
-
-        allProductSizes.forEach((size) => {
-          allMaterials.forEach((material) => {
-            const formattedSize = size.endsWith("L")
-              ? size.replace("L", " L")
-              : size.replace("kg", " kg");
-            headers.push(`Material (${formattedSize} - ${material})`);
-            headers.push(`Xarakteristika (${formattedSize} - ${material})`);
-            headers.push(`Ölçü vahidi (${formattedSize} - ${material})`);
-            headers.push(`Miqdar (${formattedSize} - ${material})`);
-          });
-        });
-
-        headers.forEach((header) => {
-          html += `<th>${header}</th>`;
-        });
-        html += "</tr>";
-
-        dataToDisplay.forEach((row) => {
-          html += "<tr>";
-          (row || []).forEach((cell) => {
-            const displayValue = processCell(cell);
-            html += `<td>${displayValue}</td>`;
           });
           html += "</tr>";
         });
@@ -1300,6 +1380,5 @@
         }
       }
     </script>
-     
   </body>
 </html>
