@@ -491,6 +491,8 @@
         "antifreeze pink blue green oncantrate": "Antifreeze G11 Concentrate",
         "antifreeze long life concantrate": "Antifreeze G12+ Concentrate",
         "antifreeze long life 50 ready": "Antifreeze G12+ Ready Mix -40°C",
+        "SPG4 5W-20 SN/CF (SL/CF)": "5W-20 SP SN CF (SL/CF)",
+        "Ultra Dynamic 5W-30  SP/C3":"Ultra Dynamic 5W-30  SP/C3 504 507"
       };
 
       const productPatterns = {
@@ -702,6 +704,7 @@
         const processedProductIds = new Set();
         const headerRowForSizes = sheet1[0] || [];
         const sizeColumnMap = {};
+
         allProductSizes.forEach((size) => {
           const columnIndex = headerRowForSizes.findIndex(
             (header) => header && header.trim() === size
@@ -710,16 +713,42 @@
             sizeColumnMap[size] = columnIndex;
           }
         });
+
+        // ID temizleme fonksiyonu
+        const cleanId = (id) => {
+          if (!id) return null;
+          return id.toString().trim().replace(/\s+/g, " ").toLowerCase();
+        };
+
+        // Sheet2'deki tüm ID'leri önceden temizleyip haritasını oluştur
+        const sheet2IdMap = new Map();
+        for (let k = 1; k < sheet2.length; k++) {
+          const sheet2Row = sheet2[k];
+          if (!sheet2Row || !sheet2Row[0] || !sheet2Row[1]) continue;
+
+          const originalId = sheet2Row[0];
+          const cleanedId = cleanId(originalId);
+
+          if (cleanedId && cleanedId !== "id") {
+            sheet2IdMap.set(cleanedId, {
+              originalRow: sheet2Row,
+              originalId: originalId,
+            });
+          }
+        }
+
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
           if (!headerRow) continue;
           const productNameInBlock = headerRow[1];
           const isProductBlockHeader = productNameInBlock && headerRow[2];
+
           if (isProductBlockHeader) {
             let blockText = "";
             let blockEndIndex = i;
             let additivesData = {};
             let blockCharacteristics = {};
+
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
               if (!currentRow) continue;
@@ -758,8 +787,10 @@
                 additivesData[additiveCode.trim()] = additivePercent;
               }
             }
+
             const normalizedBlockText = normalizeText(blockText);
             const foundMatches = {};
+
             for (const pattern of productPatterns.oem) {
               if (normalizedBlockText.includes(normalizeText(pattern))) {
                 foundMatches["oem"] = pattern;
@@ -775,12 +806,16 @@
                 foundMatches["standart"] = pattern;
               }
             }
+
             const normalizedMapKey = normalizeText(productNameInBlock);
             const searchName =
               productNameMap[normalizedMapKey] || productNameInBlock;
             const normalizedSearchName = normalizeText(searchName);
+
             let bestMatchRow = null;
             const potentialMatches = [];
+
+            // İsim bazlı eşleştirme
             for (let k = 1; k < sheet2.length; k++) {
               const sheet2Row = sheet2[k];
               const productIdFromSheet2 = sheet2Row ? sheet2Row[0] : undefined;
@@ -788,7 +823,7 @@
                 !sheet2Row ||
                 !sheet2Row[1] ||
                 !productIdFromSheet2 ||
-                productIdFromSheet2.toString().toLowerCase() === "id"
+                cleanId(productIdFromSheet2) === "id"
               ) {
                 continue;
               }
@@ -797,6 +832,7 @@
                 potentialMatches.push(sheet2Row);
               }
             }
+
             if (potentialMatches.length === 1) {
               bestMatchRow = potentialMatches[0];
             } else if (potentialMatches.length > 1) {
@@ -805,11 +841,15 @@
               );
               bestMatchRow = potentialMatches[0];
             }
+
             if (bestMatchRow) {
-              const productId = bestMatchRow[0];
-              if (!processedProductIds.has(productId)) {
+              const rawProductId = bestMatchRow[0];
+              const cleanedProductId = cleanId(rawProductId);
+
+              if (!processedProductIds.has(cleanedProductId)) {
                 const finalProductName = bestMatchRow[1];
                 const numMatches = Object.keys(foundMatches).length;
+
                 const processCategory = (category, matchedPattern) => {
                   const categoryData = generateSingleRowCategoryData(
                     headerRow,
@@ -825,6 +865,7 @@
                     categoryProducts[category] = finalProductName;
                   }
                 };
+
                 if (numMatches <= 1) {
                   const matchedPattern =
                     numMatches === 1
@@ -838,10 +879,52 @@
                     processCategory(category, foundMatches[category]);
                   }
                 }
-                processedProductIds.add(productId);
+                processedProductIds.add(cleanedProductId);
               }
             }
             i = blockEndIndex;
+          }
+        }
+
+        // Sheet2'deki işlenmemiş kayıtları tüm kategorilere ekle
+        for (let k = 1; k < sheet2.length; k++) {
+          const sheet2Row = sheet2[k];
+          if (!sheet2Row || !sheet2Row[0] || !sheet2Row[1]) continue;
+
+          const rawProductId = sheet2Row[0];
+          const cleanedProductId = cleanId(rawProductId);
+
+          if (
+            cleanedProductId &&
+            cleanedProductId !== "id" &&
+            !processedProductIds.has(cleanedProductId)
+          ) {
+            const finalProductName = sheet2Row[1];
+
+            const processCategory = (category) => {
+              // Sheet1'de karşılığı olmayan kayıtlar için boş headerRow ve varsayılan değerler
+              const emptyHeaderRow = [];
+              const categoryData = generateSingleRowCategoryData(
+                emptyHeaderRow,
+                sheet2Row,
+                category,
+                finalProductName,
+                "Sheet2'den alındı", // matchedPattern
+                {}, // additivesData - boş
+                {} // blockCharacteristics - boş
+              );
+              processedData[category].push(categoryData);
+              if (!categoryProducts[category]) {
+                categoryProducts[category] = finalProductName;
+              }
+            };
+
+            // Tüm kategorilere ekle
+            ["standart", "premium", "oem"].forEach((cat) =>
+              processCategory(cat)
+            );
+
+            processedProductIds.add(cleanedProductId);
           }
         }
       }
