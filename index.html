@@ -495,7 +495,6 @@
         ],
         "antifreeze long life 50 ready": "Antifreeze G12+ Ready Mix -40°C",
         "spg4 5w-20 sn/cf (sl/cf)": "5W-20 SP SN CF (SL/CF)",
-        // "ultra dynamic 5w-30  sp/c3 504 507": "Ultra Dynamic 5W-30  SP/C3",
         "5w-20 sp sn cf": "Super SPG4 5W-20 SN/CF",
         "utto 10w30 cf-4": "UTTO 10W-30",
         "tf dexron iii": "ATF SP-III",
@@ -506,7 +505,6 @@
         "tp ep 46": "Turbo EP 46",
         "И-20А": "I-20A",
         "Ultra Dynamic 5W-30  SP/C3 504 507": "Ultra Dynamic 5W-30  SP/C3",
-        "i-20a": "I-20A",
         "synthetic transmission 75w80 gl-5 ls": "Transmission 75W-90 LS GL-5",
         "gas engine oil sae 40": "Renewa GEO 40",
       };
@@ -1100,21 +1098,58 @@
       }
       function normalizeText(text) {
         if (!text) return "";
-        return text
-          .toString()
-          .toLowerCase()
-          .replace(/ğ/g, "g")
-          .replace(/ü/g, "u")
-          .replace(/ş/g, "s")
-          .replace(/ı/g, "i")
-          .replace(/ö/g, "o")
-          .replace(/ç/g, "c")
-          .replace(/ə/g, "e")
-          .replace(/\r\n/g, " ")
-          .replace(/[^\w\s-]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
+        return (
+          text
+            .toString()
+            .toLowerCase()
+            // Kiril karakterleri ekleyin
+            .replace(/и/g, "i")
+            .replace(/а/g, "a")
+            .replace(/е/g, "e")
+            .replace(/о/g, "o")
+            .replace(/у/g, "u")
+            .replace(/р/g, "r")
+            .replace(/т/g, "t")
+            .replace(/п/g, "p")
+            .replace(/с/g, "s")
+            .replace(/д/g, "d")
+            .replace(/ф/g, "f")
+            .replace(/г/g, "g")
+            .replace(/х/g, "h")
+            .replace(/й/g, "j")
+            .replace(/к/g, "k")
+            .replace(/л/g, "l")
+            .replace(/з/g, "z")
+            .replace(/ж/g, "zh")
+            .replace(/б/g, "b")
+            .replace(/н/g, "n")
+            .replace(/м/g, "m")
+            .replace(/ц/g, "ts")
+            .replace(/в/g, "v")
+            .replace(/щ/g, "sch")
+            .replace(/ш/g, "sh")
+            .replace(/ч/g, "ch")
+            .replace(/ъ/g, "")
+            .replace(/ы/g, "y")
+            .replace(/ь/g, "")
+            .replace(/э/g, "e")
+            .replace(/ю/g, "yu")
+            .replace(/я/g, "ya")
+            // Türkçe karakterler
+            .replace(/ğ/g, "g")
+            .replace(/ü/g, "u")
+            .replace(/ş/g, "s")
+            .replace(/ı/g, "i")
+            .replace(/ö/g, "o")
+            .replace(/ç/g, "c")
+            .replace(/ə/g, "e")
+            .replace(/\r\n/g, " ")
+            .replace(/[^\w\s-]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+        );
       }
+
       function getMaterialCharacteristic(
         material,
         size,
