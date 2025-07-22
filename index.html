@@ -1163,34 +1163,8 @@
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
           }
 
-          // This is the new, corrected function to create category sheets
           const createCategorySheet = (data) => {
             if (!data || data.length === 0) return null;
-
-            // Define the fixed sizes for headers, matching the display function
-            const sizes = [
-              "1L",
-              "1.5L",
-              "4L",
-              "5L",
-              "6L",
-              "7L",
-              "10L",
-              "18L",
-              "20L",
-              "25L",
-              "30L",
-              "60L",
-              "200L",
-              "1000L",
-              "4kg",
-              "9kg",
-              "14kg",
-              "18kg",
-              "180kg",
-              "0.25L",
-              "0.5L",
-            ];
 
             const allPossibleSizes = [
               ...new Set(
@@ -1198,9 +1172,13 @@
                   row.packagingData ? Object.keys(row.packagingData) : []
                 )
               ),
-            ].sort((a, b) => parseFloat(a) - parseFloat(b));
+            ].sort((a, b) => {
+              const numA = parseFloat(a);
+              const numB = parseFloat(b);
+              if (numA !== numB) return numA - numB;
+              return a.localeCompare(b);
+            });
 
-            // Find the maximum number of material groups needed, just like the display function
             const maxMaterialGroups = Math.max(
               ...data.map((row) =>
                 row.materials ? Object.keys(row.materials).length : 0
@@ -1208,21 +1186,18 @@
               0
             );
 
-            // --- Build Headers ---
             const headers = ["Məhsulun ID", "Məhsulun adı"];
             for (let i = 1; i <= maxMaterialGroups; i++) {
               headers.push(`MATERIAL ${i}`, `ÖLÇÜ VAHIDI ${i}`, `MIQDAR ${i}`);
             }
-            headers.push(...allPossibleSizes); // Add size headers
+            headers.push(...allPossibleSizes);
 
-            // --- Build Data Rows ---
             const dataRows = data.map((row) => {
               const rowArray = [
                 processCell(row.productId),
                 processCell(row.productName),
               ];
 
-              // Add material data
               const productMaterials = row.materials
                 ? Object.keys(row.materials).sort()
                 : [];
@@ -1237,12 +1212,10 @@
                 materialCount++;
               });
 
-              // Pad with empty cells if there are fewer materials than the max
               for (let i = materialCount; i < maxMaterialGroups; i++) {
                 rowArray.push("-", "-", "-");
               }
 
-              // Add packaging data for each size
               allPossibleSizes.forEach((size) => {
                 const value =
                   row.packagingData && row.packagingData[size]
@@ -1257,7 +1230,6 @@
             return XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
           };
 
-          // Create and append each category sheet
           const wsStandart = createCategorySheet(processedData.standart);
           if (wsStandart)
             XLSX.utils.book_append_sheet(wb, wsStandart, "Standart");
