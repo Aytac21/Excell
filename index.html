@@ -1149,11 +1149,44 @@
         if (!processedData.sheet1.length && !processedData.sheet2.length) {
           showStatus("Əvvəlcə fayl yükləyin!", "error");
           return;
-        }
-        try {
-          const wb = XLSX.utils.book_new();
+        } // YENİ YARDIMCI FONKSİYON: Birleşik metni parçalara ayırır. // Örnek: "Bidon-Değer1Qapaq-Değer2" -> { Bidon: "Değer1", Qapaq: "Değer2" }
 
-          // Append original Sheet1 and Sheet2
+        const parsePackagingString = (str, components) => {
+          const parsedData = {};
+          components.forEach((c) => (parsedData[c] = "-")); // Tüm alanlara varsayılan değer ata
+
+          if (!str || str === "-") {
+            return parsedData;
+          }
+
+          for (let i = 0; i < components.length; i++) {
+            const currentComp = components[i];
+            const startIndex = str.indexOf(currentComp + "-");
+
+            if (startIndex === -1) continue;
+
+            let endIndex = str.length; // Sonraki bileşeni bulup kesme noktasını belirle
+            for (let j = 0; j < components.length; j++) {
+              if (i === j) continue;
+              const nextCompIndex = str.indexOf(
+                components[j] + "-",
+                startIndex + 1
+              );
+              if (nextCompIndex !== -1 && nextCompIndex < endIndex) {
+                endIndex = nextCompIndex;
+              }
+            }
+            const value = str
+              .substring(startIndex + currentComp.length + 1, endIndex)
+              .trim();
+            parsedData[currentComp] = value || "-";
+          }
+          return parsedData;
+        };
+
+        try {
+          const wb = XLSX.utils.book_new(); // Orijinal sheet'leri ekle
+
           if (processedData.sheet1.length > 0) {
             const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
             XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
@@ -1164,7 +1197,15 @@
           }
 
           const createCategorySheet = (data) => {
-            if (!data || data.length === 0) return null;
+            if (!data || data.length === 0) return null; // Sütunlara bölünecek anahtar kelimeler
+
+            const packagingComponents = [
+              "Bidon",
+              "Qapaq",
+              "Etiket",
+              "Qutu",
+              "Palet",
+            ];
 
             const allPossibleSizes = [
               ...new Set(
@@ -1184,13 +1225,17 @@
                 row.materials ? Object.keys(row.materials).length : 0
               ),
               0
-            );
+            ); // YENİ BAŞLIK OLUŞTURMA MANTIĞI
 
             const headers = ["Məhsulun ID", "Məhsulun adı"];
             for (let i = 1; i <= maxMaterialGroups; i++) {
               headers.push(`MATERIAL ${i}`, `ÖLÇÜ VAHIDI ${i}`, `MIQDAR ${i}`);
-            }
-            headers.push(...allPossibleSizes);
+            } // Her bir boyut ve her bir parça için ayrı sütun başlığı oluştur
+            allPossibleSizes.forEach((size) => {
+              packagingComponents.forEach((component) => {
+                headers.push(`${size} ${component}`); // Örn: "1L Bidon", "1L Qapaq"
+              });
+            }); // YENİ VERİ SATIRI OLUŞTURMA MANTIĞI
 
             const dataRows = data.map((row) => {
               const rowArray = [
@@ -1214,14 +1259,21 @@
 
               for (let i = materialCount; i < maxMaterialGroups; i++) {
                 rowArray.push("-", "-", "-");
-              }
+              } // Her bir boyut için metni ayrıştır ve ilgili sütunlara yaz
 
               allPossibleSizes.forEach((size) => {
-                const value =
+                const combinedString =
                   row.packagingData && row.packagingData[size]
                     ? row.packagingData[size]
                     : "-";
-                rowArray.push(processCell(value));
+                const parsedData = parsePackagingString(
+                  combinedString,
+                  packagingComponents
+                ); // Ayrıştırılmış verileri doğru sırayla sütunlara ekle
+
+                packagingComponents.forEach((component) => {
+                  rowArray.push(processCell(parsedData[component]));
+                });
               });
 
               return rowArray;
@@ -1250,6 +1302,7 @@
           console.error("Download Error:", error);
         }
       }
+
       function displayTableWithPagination(tableId, dataKey, allData) {
         const table = document.getElementById(tableId);
         const paginationDiv = document.getElementById(`${dataKey}Pagination`);
