@@ -708,15 +708,14 @@
         };
         reader.readAsArrayBuffer(file);
       }
+
       function categorizeProducts(sheet1, sheet2) {
-        // Reset data
         processedData.standart = [];
         processedData.premium = [];
         processedData.oem = [];
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
-
         const processedProductIds = new Set();
         const headerRowForSizes = sheet1[0] || [];
         const sizeColumnMap = {};
@@ -735,11 +734,9 @@
           return id.toString().trim().replace(/\s+/g, " ").toLowerCase();
         };
 
-        // Main loop for product blocks in Sheet1
         for (let i = 1; i < sheet1.length; i++) {
           const headerRow = sheet1[i];
           if (!headerRow) continue;
-
           const productNameInBlock = headerRow[1];
           const isProductBlockHeader = productNameInBlock && headerRow[2];
 
@@ -749,11 +746,9 @@
             let additivesData = {};
             let blockCharacteristics = {};
 
-            // --- Collect all data within the product block ---
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
               if (!currentRow) continue;
-              // If we find the start of the next block, stop.
               if (j > i && currentRow[1] && currentRow[2]) {
                 break;
               }
@@ -773,8 +768,9 @@
                   blockCharacteristics[materialName] = {};
                   for (const size in sizeColumnMap) {
                     const columnIndex = sizeColumnMap[size];
+                    const characteristic = currentRow[columnIndex];
                     blockCharacteristics[materialName][size] =
-                      currentRow[columnIndex] || "-";
+                      characteristic || "-";
                   }
                 }
               }
@@ -789,83 +785,78 @@
               }
             }
 
-            // --- Enhanced matching logic for arrays ---
-            const normalizedMapKey = normalizeText(productNameInBlock);
-            let targetNames =
-              productNameMap[normalizedMapKey] || productNameInBlock;
+            const normalizedBlockText = normalizeText(blockText);
+            const foundMatches = {};
 
-            // Ensure targetNames is always an array for consistent processing
-            if (!Array.isArray(targetNames)) {
-              targetNames = [targetNames];
+            for (const pattern of productPatterns.oem) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["oem"] = pattern;
+              }
+            }
+            for (const pattern of productPatterns.premium) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["premium"] = pattern;
+              }
+            }
+            for (const pattern of productPatterns.standart) {
+              if (normalizedBlockText.includes(normalizeText(pattern))) {
+                foundMatches["standart"] = pattern;
+              }
             }
 
-            // Process each target name in the array
-            targetNames.forEach((targetName) => {
-              const normalizedTargetName = normalizeText(String(targetName));
+            const normalizedMapKey = normalizeText(productNameInBlock);
+            let searchNames =
+              productNameMap[normalizedMapKey] || productNameInBlock;
 
-              // Find all potential matches from Sheet2 for this specific target name
-              const potentialMatches = [];
-              for (let k = 1; k < sheet2.length; k++) {
-                const sheet2Row = sheet2[k];
-                if (!sheet2Row || !sheet2Row[1]) continue;
+            if (!Array.isArray(searchNames)) {
+              searchNames = [searchNames];
+            }
 
-                const sheet2ProductName = normalizeText(sheet2Row[1]);
+            const normalizedSearchNames = searchNames.map((name) =>
+              normalizeText(String(name))
+            );
 
-                // Check if the Sheet2 product name matches this specific target name
-                if (sheet2ProductName.includes(normalizedTargetName)) {
-                  potentialMatches.push(sheet2Row);
-                }
+            const potentialMatches = [];
+            for (let k = 1; k < sheet2.length; k++) {
+              const sheet2Row = sheet2[k];
+              const productIdFromSheet2 = sheet2Row ? sheet2Row[0] : undefined;
+              if (
+                !sheet2Row ||
+                !sheet2Row[1] ||
+                !productIdFromSheet2 ||
+                cleanId(productIdFromSheet2) === "id"
+              ) {
+                continue;
               }
+              const sheet2ProductName = normalizeText(sheet2Row[1]);
+              const isMatch = normalizedSearchNames.some((name) =>
+                sheet2ProductName.includes(name)
+              );
 
-              // Select the best match from potential matches
-              let bestMatchRow = null;
-              if (potentialMatches.length === 1) {
-                bestMatchRow = potentialMatches[0];
-              } else if (potentialMatches.length > 1) {
-                // Pick the match with the shortest name (most specific)
-                potentialMatches.sort(
-                  (a, b) => (a[1] || "").length - (b[1] || "").length
-                );
-                bestMatchRow = potentialMatches[0];
+              if (isMatch) {
+                potentialMatches.push(sheet2Row);
               }
+            }
 
-              // --- Process the best match if found ---
-              if (bestMatchRow) {
-                const rawProductId = bestMatchRow[0];
+            // --- DƏYİŞİKLİK BAŞLADI: 'bestMatchRow' məntiqi ləğv edildi ---
+            // 'bestMatchRow' seçmək əvəzinə, tapılan BÜTÜN uyğunluqlar üçün dövr yaradırıq.
+            if (potentialMatches.length > 0) {
+              for (const matchRow of potentialMatches) {
+                // Hər bir uyğun məhsul üçün dövr
+                const rawProductId = matchRow[0];
                 const cleanedProductId = cleanId(rawProductId);
 
                 if (!processedProductIds.has(cleanedProductId)) {
-                  // Determine category based on keywords in the block text
-                  const normalizedBlockText = normalizeText(blockText);
-                  const foundMatches = {};
-                  if (
-                    productPatterns.oem.some((p) =>
-                      normalizedBlockText.includes(normalizeText(p))
-                    )
-                  )
-                    foundMatches.oem = true;
-                  if (
-                    productPatterns.premium.some((p) =>
-                      normalizedBlockText.includes(normalizeText(p))
-                    )
-                  )
-                    foundMatches.premium = true;
-                  if (
-                    productPatterns.standart.some((p) =>
-                      normalizedBlockText.includes(normalizeText(p))
-                    )
-                  )
-                    foundMatches.standart = true;
+                  const finalProductName = matchRow[1];
+                  const numMatches = Object.keys(foundMatches).length;
 
-                  const finalProductName = bestMatchRow[1];
-
-                  const processCategory = (category) => {
+                  const processCategory = (category, matchedPattern) => {
                     const categoryData = generateSingleRowCategoryData(
                       headerRow,
-                      bestMatchRow,
+                      matchRow, // 'bestMatchRow' əvəzinə 'matchRow' istifadə olunur
                       category,
                       finalProductName,
-                      "",
+                      matchedPattern,
                       additivesData,
                       blockCharacteristics
                     );
@@ -875,53 +866,67 @@
                     }
                   };
 
-                  // If specific categories are matched, add to them. Otherwise, add to all.
-                  if (Object.keys(foundMatches).length > 0) {
-                    if (foundMatches.oem) processCategory("oem");
-                    if (foundMatches.premium) processCategory("premium");
-                    if (foundMatches.standart) processCategory("standart");
+                  if (numMatches <= 1) {
+                    const matchedPattern =
+                      numMatches === 1
+                        ? Object.values(foundMatches)[0]
+                        : "Təyin edilməyib";
+                    ["standart", "premium", "oem"].forEach((cat) =>
+                      processCategory(cat, matchedPattern)
+                    );
                   } else {
-                    // If no category keyword is found, add the product to all categories by default
-                    ["standart", "premium", "oem"].forEach(processCategory);
+                    for (const category in foundMatches) {
+                      processCategory(category, foundMatches[category]);
+                    }
                   }
-
                   processedProductIds.add(cleanedProductId);
                 }
               }
-            });
-
-            i = blockEndIndex; // Skip the processed rows
+            }
+            // --- DƏYİŞİKLİK BİTDİ ---
+            i = blockEndIndex;
           }
         }
 
-        // Add any remaining unprocessed products from Sheet2
+        // Add unprocessed records from Sheet2 to all categories
         for (let k = 1; k < sheet2.length; k++) {
           const sheet2Row = sheet2[k];
           if (!sheet2Row || !sheet2Row[0] || !sheet2Row[1]) continue;
-          const cleanedProductId = cleanId(sheet2Row[0]);
+
+          const rawProductId = sheet2Row[0];
+          const cleanedProductId = cleanId(rawProductId);
+
           if (
             cleanedProductId &&
             cleanedProductId !== "id" &&
             !processedProductIds.has(cleanedProductId)
           ) {
             const finalProductName = sheet2Row[1];
-            const categoryData = generateSingleRowCategoryData(
-              [],
-              sheet2Row,
-              "standart",
-              finalProductName,
-              "Sheet2'den alındı",
-              {},
-              {}
+            const processCategory = (category) => {
+              const emptyHeaderRow = [];
+              const categoryData = generateSingleRowCategoryData(
+                emptyHeaderRow,
+                sheet2Row,
+                category,
+                finalProductName,
+                "Sheet2'den alındı",
+                {},
+                {}
+              );
+              processedData[category].push(categoryData);
+              if (!categoryProducts[category]) {
+                categoryProducts[category] = finalProductName;
+              }
+            };
+
+            ["standart", "premium", "oem"].forEach((cat) =>
+              processCategory(cat)
             );
-            // Add to all categories as a fallback
-            processedData.standart.push({ ...categoryData });
-            processedData.premium.push({ ...categoryData });
-            processedData.oem.push({ ...categoryData });
             processedProductIds.add(cleanedProductId);
           }
         }
       }
+
       function generateSingleRowCategoryData(
         sheet1Row,
         sheet2Row,
