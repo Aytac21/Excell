@@ -1,378 +1,593 @@
 <!DOCTYPE html>
+
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Engine Oil Excel Data Processor</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
       body {
         font-family: Arial, sans-serif;
+
         margin: 20px;
+
         background: linear-gradient(135deg, #3548a1 0%, #370d62 100%);
+
         min-height: 100vh;
+
         color: white;
       }
+
       .container {
         max-width: 1200px;
+
         margin: 0 auto;
+
         background: rgba(255, 255, 255, 0.1);
+
         padding: 30px;
+
         border-radius: 15px;
+
         backdrop-filter: blur(10px);
+
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
       }
+
       h1 {
         text-align: center;
+
         margin-bottom: 30px;
+
         font-size: 2.5em;
+
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
+
       .file-upload {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 20px;
+
         border-radius: 10px;
+
         margin-bottom: 20px;
+
         border: 2px dashed rgba(255, 255, 255, 0.3);
+
         text-align: center;
       }
+
       .file-upload input[type="file"] {
         display: none;
       }
+
       .file-upload-label {
         background: linear-gradient(45deg, #4caf50, #45a049);
+
         color: white;
+
         padding: 15px 30px;
+
         border-radius: 25px;
+
         cursor: pointer;
+
         font-weight: bold;
+
         display: inline-block;
+
         transition: all 0.3s ease;
+
         box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
       }
+
       .file-upload-label:hover {
         transform: translateY(-2px);
+
         box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
       }
+
       .tabs {
         display: flex;
+
         background: rgba(255, 255, 255, 0.1);
+
         border-radius: 10px;
+
         margin-bottom: 20px;
+
         overflow: hidden;
       }
+
       .tab {
         flex: 1;
+
         padding: 15px;
+
         text-align: center;
+
         cursor: pointer;
+
         transition: all 0.3s ease;
+
         background: rgba(255, 255, 255, 0.1);
+
         border: none;
+
         color: white;
+
         font-weight: bold;
       }
+
       .tab:hover {
         background: rgba(255, 255, 255, 0.2);
       }
+
       .tab.active {
         background: rgba(255, 255, 255, 0.3);
+
         box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
       }
+
       .tab-content {
         display: none;
+
         background: rgba(255, 255, 255, 0.05);
+
         padding: 20px;
+
         border-radius: 10px;
+
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
+
       .tab-content.active {
         display: block;
+
         overflow-x: auto;
+
         max-width: 100%;
+
         height: 500px;
       }
+
       table {
         width: 100%;
+
         border-collapse: collapse;
+
         margin-top: 20px;
+
         background: rgba(255, 255, 255, 0.1);
+
         border-radius: 10px;
       }
+
       th,
       td {
         padding: 12px;
+
         text-align: left;
+
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
         font-size: 12px;
+
         min-width: 120px;
       }
+
       th {
         background: rgba(255, 255, 255, 0.2);
+
         font-weight: bold;
+
         text-transform: uppercase;
+
         font-size: 0.9em;
       }
+
       tr:hover {
         background: rgba(255, 255, 255, 0.05);
       }
+
       .download-btn {
         background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+
         color: white;
+
         border: none;
+
         padding: 15px 30px;
+
         border-radius: 25px;
+
         cursor: pointer;
+
         font-size: 16px;
+
         font-weight: bold;
+
         margin: 20px auto;
+
         display: block;
+
         transition: all 0.3s ease;
+
         box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
       }
+
       .download-btn:hover {
         transform: translateY(-2px);
+
         box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
       }
+
       .download-btn:disabled {
         opacity: 0.5;
+
         cursor: not-allowed;
       }
+
       .info-box {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 20px;
+
         border-radius: 10px;
+
         margin-bottom: 20px;
+
         border-left: 4px solid #4caf50;
       }
+
       .product-type {
         font-weight: bold;
+
         color: #4caf50;
+
         margin-bottom: 10px;
       }
+
       .status {
         text-align: center;
+
         margin: 20px 0;
+
         font-weight: bold;
       }
+
       .status.success {
         color: #4caf50;
       }
+
       .status.error {
         color: #ff6b6b;
       }
+
       .category-info {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 15px;
+
         border-radius: 8px;
+
         margin-bottom: 15px;
+
         border-left: 4px solid #4caf50;
       }
+
       .category-info h3 {
         margin: 0 0 10px 0;
+
         color: #4caf50;
       }
+
       .category-info p {
         margin: 5px 0;
       }
+
       .column-info {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 15px;
+
         border-radius: 8px;
+
         margin-bottom: 15px;
+
         border-left: 4px solid #2196f3;
       }
+
       .column-info h3 {
         margin: 0 0 10px 0;
+
         color: #2196f3;
       }
+
       .column-list {
         font-size: 0.9em;
+
         line-height: 1.4;
       }
+
       .debug-info {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 15px;
+
         border-radius: 8px;
+
         margin-bottom: 15px;
+
         border-left: 4px solid #ff9800;
+
         font-size: 0.9em;
       }
+
       .debug-info h3 {
         margin: 0 0 10px 0;
+
         color: #ff9800;
       }
+
       .pattern-match {
         background: rgba(255, 255, 255, 0.1);
+
         padding: 15px;
+
         border-radius: 8px;
+
         margin-bottom: 15px;
+
         border-left: 4px solid #9c27b0;
       }
+
       .pattern-match h3 {
         margin: 0 0 10px 0;
+
         color: #9c27b0;
       }
+
       .pagination {
         display: flex;
+
         justify-content: center;
+
         align-items: center;
+
         margin-top: 20px;
+
         gap: 10px;
       }
+
       .pagination button {
         background: rgba(255, 255, 255, 0.1);
+
         color: white;
+
         border: 1px solid rgba(255, 255, 255, 0.3);
+
         padding: 8px 15px;
+
         border-radius: 5px;
+
         cursor: pointer;
+
         transition: background 0.3s ease;
       }
+
       .pagination button:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.2);
       }
+
       .pagination button:disabled {
         opacity: 0.5;
+
         cursor: not-allowed;
       }
+
       .pagination span {
         font-weight: bold;
       }
     </style>
   </head>
+
   <body>
     <div class="container">
       <h1>🛢️ Engine Oil Excel Data Processor</h1>
 
                                    
+
       <div class="info-box">
                                                
+
         <div class="product-type">Excel Fayl Emal Sistemi</div>
+
                                                
+
         <p>
           Bu sistem all_products.xlsx faylından məlumatları oxuyur və 5 ayrı
           sheet-ə ayırır: Sheet1, Sheet2, Standart, Premium, OEM.              
                    
         </p>
+
                                          
       </div>
 
                                    
+
       <div class="column-info">
                                                
+
         <h3>Sheet1 Sütunları</h3>
+
                                                
+
         <div class="column-list">
                                         <strong>Əsas Sütunlar:</strong> ID,
           Məhsul Adı, və müxtəlif həcm başlıqları (1L, 4L, 20L və s.). <br />
+
                                         <strong>Məhsul Adları:</strong> Aminol™
           Special Generation SLG1 0W-20, SP/GF-6A           <br />
+
                                         <strong>Məhsul Təyinatı:</strong> Bidon
           (Açıq göy), Qapaq (Qırmızı falqa), Etiket (Orqinal), Qutu (Kıpaj),
           Palet                                  
         </div>
+
                                          
       </div>
 
                                    
+
       <div class="column-info">
                                                
+
         <h3>Sheet2 Sütunları</h3>
+
                                                
+
         <div class="column-list">
                                         <strong>Əsas Sütunlar:</strong> Məhsulun
           ID, Məhsulun adı, Spesifikasıyanın adı, Spesifikasıyanın tipi,
           Material, Xarakteristika, Ölçü vahidi, Miqdar, Material,
           Xarakteristika <br />
+
                                         <strong>Materiallar:</strong> Bidon (1LT
           Açıq Göy Aminol), Qapaq (Qırmızı), Etiket (Aminol Special Generation),
           Qutu (Kıpaj), Palet, BE, GT, PA, SX, ZX                        
         </div>
+
                                          
       </div>
 
                                    
+
       <div class="column-info">
                                                
+
         <h3>Kateqoriya Məhsulları</h3>
+
                                                
+
         <div class="column-list">
                                         <strong>Standart:</strong> Standart
           keyfiyyət məhsulları                     <br />
+
                                         <strong>Premium:</strong> ILSAC GF-6A,
           GF-6B, GF-5 və API SP, SN Plus keyfiyyət məhsulları                  
             <br />
+
                                         <strong>OEM:</strong> 0W-20 SP/GF-6A və
           Top Quality yüksək keyfiyyət məhsulları                              
              
         </div>
+
                                          
       </div>
+
       <div class="file-upload">
         <input type="file" id="fileInput" accept=".xlsx,.xls" />
+
         <label for="fileInput" class="file-upload-label">
           📁 all_products.xlsx faylını seçin
         </label>
+
         <div class="status" id="status"></div>
       </div>
 
       <div id="debugInfo" class="debug-info" style="display: none">
         <h3>Debug Info</h3>
+
         <div id="debugContent"></div>
       </div>
+
       <div id="patternMatch" class="pattern-match" style="display: none">
         <h3>Pattern Matching Results</h3>
+
         <div id="patternContent"></div>
       </div>
+
       <div class="tabs">
         <button class="tab active" onclick="showTab('sheet1', this)">
           Sheet1
         </button>
+
         <button class="tab" onclick="showTab('sheet2', this)">Sheet2</button>
+
         <button class="tab" onclick="showTab('standart', this)">
           Standart
         </button>
+
         <button class="tab" onclick="showTab('premium', this)">Premium</button>
+
         <button class="tab" onclick="showTab('oem', this)">OEM</button>
       </div>
+
       <div id="sheet1" class="tab-content active">
         <h2>Sheet1 - Məhsul Məlumatları</h2>
+
         <table id="sheet1Table"></table>
+
         <div class="pagination" id="sheet1Pagination"></div>
       </div>
+
       <div id="sheet2" class="tab-content">
         <h2>Sheet2 - Material Spesifikasiyaları</h2>
+
         <table id="sheet2Table"></table>
+
         <div class="pagination" id="sheet2Pagination"></div>
       </div>
+
       <div id="standart" class="tab-content">
         <h2>Standart Məhsullar</h2>
+
         <div id="standartInfo" class="category-info" style="display: none">
           <h3>Standart Məhsul</h3>
+
           <p id="standartProduct"></p>
         </div>
+
         <table id="standartTable"></table>
+
         <div class="pagination" id="standartPagination"></div>
       </div>
+
       <div id="premium" class="tab-content">
         <h2>Premium Məhsullar</h2>
+
         <div id="premiumInfo" class="category-info" style="display: none">
           <h3>Premium Məhsul</h3>
+
           <p id="premiumProduct"></p>
         </div>
+
         <table id="premiumTable"></table>
+
         <div class="pagination" id="premiumPagination"></div>
       </div>
+
       <div id="oem" class="tab-content">
         <h2>OEM Məhsullar</h2>
+
         <div id="oemInfo" class="category-info" style="display: none">
           <h3>OEM Məhsul</h3>
+
           <p id="oemProduct"></p>
         </div>
+
         <table id="oemTable"></table>
+
         <div class="pagination" id="oemPagination"></div>
       </div>
+
       <button
         class="download-btn"
         id="downloadBtn"
@@ -382,8 +597,10 @@
         📥 Yeni Excel Faylını Yüklə
       </button>
     </div>
+
     <script>
       function escapeRegExp(string) {
+        if (!string) return "";
         return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       }
       let processedData = {
@@ -398,11 +615,9 @@
         premium: "",
         oem: "",
       };
-
       let originalSheet1 = [];
       let originalSheet2 = [];
       let dynamicBaseOils = [];
-
       const productNameMap = {
         "ultra dynamic 0w-30 sp/c3": "Engine Oil 0W-30 SP/C3 VA",
         "ultra dynamic 5w-30 SP/C3 504 507": [
@@ -415,67 +630,163 @@
           "NovaLube Pro 5W-30 SP/C3",
         ],
         "0w-30 sp/c3": "Engine Oil 0W-30 SP/C3",
-        "5w-30 sp sn cf": "Engine Oil 5W-20 SN/CF",
+        "5w-20 sp sn cf": "Engine Oil 5W-20 SN/CF",
         "utto 10w30 cf-4": [
           "UTTO 10W-30",
           "AgriFlex UTTO 10W-30",
           "AgriForce UTTO 10W-30",
         ],
-        "2t ta": ["Motobike 2T", "MotoMax 2T", "Mototech 2T"],
+        "2t ta": ["Motobike 2T", "MotoMax 2T", "Mototech 2T", "MotoPrime 2T"],
         "4t 10w-30": [
           "Motobike 4T 10W-30",
           "MotoMax 4T 10W-30",
           "Mototech 4T 10W-30",
+          "MotoPrime 4T 10W-30",
         ],
         "4t 10w-40 ma": [
           "Motobike 4T 10W-40",
           "MotoMax 4T 10W-40",
           "Mototech 4T 10W-40",
+          "MotoPrime 4T 10W-40",
         ],
         "4t 15w-40": [
           "Motobike 4T 15W-40",
           "MotoMax 4T 15W-40",
           "Mototech 4T 15W-40",
+          "MotoPrime 4T 15W-40",
         ],
         "to-4 sae 10w": "TO-4 10W",
         "to4 sae 5w-30": "TO-4 5W-30",
-        "atf dexron ii": "ATF DX-IID",
-        "atf dexron iii": ["ATF DX-IIIH", "ATF SP-III"],
-        "atf sp iv": ["ATF SP-IV", "ATF T-IV"],
-        "atf vi": ["Aminol™ ATF DX-VI, Aminol™ ATF T-IV", "ATF DX-VI"],
-        "atf v": "ATF Mercon V",
-        "synthetic gear oil 68": ["GearSynth 68", "Gear Oil Synth 68"],
-        "synthetic gear oil 100": ["GearSynth 100", "Gear Oil Synth 100"],
+        "atf dexron ii": ["ATF DX-IID", "TransFluid DX-IID"],
+        "atf dexron iii": [
+          "ATF DX-IIIH",
+          "ATF SP-III",
+          "TransFluid DX-IIIH",
+          "TransFluid SP-III",
+        ],
+        "atf sp iv": [
+          "ATF SP-IV",
+          "ATF T-IV",
+          "TransFluid SP-IV",
+          "TransFluid T-IV",
+        ],
+        "atf vi": [
+          "Aminol™ ATF DX-VI, Aminol™ ATF T-IV",
+          "ATF DX-VI",
+          "TransFluid DX-VI",
+        ],
+        "atf v": ["ATF Mercon V", "TransFluid Mercon V"],
+        "atf cvt": "TransFluid CVT",
+        "synthetic gear oil 68": [
+          "GearSynth 68",
+          "Gear Oil Synth 68",
+          "GearLux Synta 68",
+          "GearMaster Synta 68",
+        ],
+        "synthetic gear oil 100": [
+          "GearSynth 100",
+          "Gear Oil Synth 100",
+          "GearLux Synth 100",
+          "GearMaster Synth 100",
+        ],
         "synthetic gear oil 150": ["GearSynth 150", "Gear Oil Synth 150"],
         "synthetic gear oil 220": "GearSynth 220",
-        "synthetic gear oil 320": ["GearSynth 320", "Gear Oil Synth 320"],
+        "synthetic gear oil 320": [
+          "GearSynth 320",
+          "Gear Oil Synth 320",
+          "GearLux Synta 320",
+          "GearMaster Synta 320",
+        ],
         "synthetic gear oil 460": "GearSynth 460",
         "synthetic gear oil 680": "GearSynth 680",
-        "slideway oil 32": ["SlideFlow 32", "Slideway Oil 32"],
-        "slideway oil 46": ["SlideFlow 46", "Slideway Oil 46"],
-        "slideway oil 68": ["SlideFlow 68", "Slideway Oil 68"],
-        "slideway oil 100": ["SlideFlow 100", "Slideway Oil 100"],
-        "slideway oil 150": ["SlideFlow 150", "Slideway Oil 150"],
-        "slideway oil 220": ["SlideFlow 220", "Slideway Oil 220"],
-        "slideway oil 320": ["SlideFlow 320", "Slideway Oil 320"],
-        "compressor oil 32": ["AirTec 32", "Compressor Oil 32"],
-        "compressor oil 46": ["AirTec 46", "Compressor Oil 46"],
-        "compressor oil 68": ["AirTec 68", "Compressor Oil 68"],
-        "compressor oil 100": ["AirTec 100", "Compressor Oil 100"],
-        "compressor oil 150": ["AirTec 150", "Compressor Oil 150"],
-        "compressor oil 220": ["AirTec 220", "Compressor Oil 220"],
-        "compressor oil 320": ["AirTec 320", "Compressor Oil 320"],
-        "compressor oil vdl 46": ["AirTec VDL 46", "Compressor Oil VDL 46"],
-        "compressor oil vdl 68": ["AirTec VDL 68", "Compressor Oil VDL 68"],
-        "compressor oil vdl 100": ["AirTec VDL 100", "Compressor Oil VDL 100"],
-        "compressor oil vdl 150": ["AirTec VDL 150", "Compressor Oil VDL 150"],
-        "compressor oil vdl 220": ["AirTec VDL 220", "Compressor Oil VDL 220"],
-        "compressor oil vdl 320": ["AirTec VDL 320", "Compressor Oil VDL 320"],
-        "tp 32": ["Turbo T-32", "Turbine Oil 32"],
-        "tp 46": ["Turbo T-46", "Turbine Oil 46"],
-        "tp 68": ["Turbo T-68", "Turbine Oil 68"],
-        "tp ep 32": ["Turbo EP 32", "Turbine Oil EP 32"],
-        "tp ep 46": ["Turbo EP 46", "Turbine Oil EP 46"],
+        "slideway oil 32": ["SlideFlow 32", "Slideway Oil 32", "Multi SW 32"],
+        "slideway oil 46": ["SlideFlow 46", "Slideway Oil 46", "Multi SW 46"],
+        "slideway oil 68": ["SlideFlow 68", "Slideway Oil 68", "Multi SW 68"],
+        "slideway oil 100": [
+          "SlideFlow 100",
+          "Slideway Oil 100",
+          "Multi SW 100",
+        ],
+        "slideway oil 150": [
+          "SlideFlow 150",
+          "Slideway Oil 150",
+          "Multi SW 150",
+        ],
+        "slideway oil 220": [
+          "SlideFlow 220",
+          "Slideway Oil 220",
+          "Multi SW 220",
+        ],
+        "slideway oil 320": [
+          "SlideFlow 320",
+          "Slideway Oil 320",
+          "Multi SW 320",
+        ],
+        "compressor oil 32": ["AirTec 32", "Compressor Oil 32", "CompressX 32"],
+        "compressor oil 46": ["AirTec 46", "Compressor Oil 46", "CompressX 46"],
+        "compressor oil 68": ["AirTec 68", "Compressor Oil 68", "CompressX 68"],
+        "compressor oil 100": [
+          "AirTec 100",
+          "Compressor Oil 100",
+          "CompressX 100",
+        ],
+        "compressor oil 150": [
+          "AirTec 150",
+          "Compressor Oil 150",
+          "CompressX 150",
+        ],
+        "compressor oil 220": [
+          "AirTec 220",
+          "Compressor Oil 220",
+          "CompressX 220",
+        ],
+        "compressor oil 320": [
+          "AirTec 320",
+          "Compressor Oil 320",
+          "CompressX 320",
+        ],
+        "compressor oil vdl 46": [
+          "AirTec VDL 46",
+          "Compressor Oil VDL 46",
+          "CompressX VDL 46",
+        ],
+        "compressor oil vdl 68": [
+          "AirTec VDL 68",
+          "Compressor Oil VDL 68",
+          "CompressX VDL 68",
+        ],
+        "compressor oil vdl 100": [
+          "AirTec VDL 100",
+          "Compressor Oil VDL 100",
+          "CompressX VDL 100",
+        ],
+        "compressor oil vdl 150": [
+          "AirTec VDL 150",
+          "Compressor Oil VDL 150",
+          "CompressX VDL 150",
+        ],
+        "compressor oil vdl 220": [
+          "AirTec VDL 220",
+          "Compressor Oil VDL 220",
+          "CompressX VDL 220",
+        ],
+        "compressor oil vdl 320": [
+          "AirTec VDL 320",
+          "Compressor Oil VDL 320",
+          "CompressX VDL 320",
+        ],
+        "tp 32": ["Turbo T-32", "Turbine Oil 32", "TurboFlow 32"],
+        "tp 46": ["Turbo T-46", "Turbine Oil 46", "TurboFlow 46"],
+        "tp 68": ["Turbo T-68", "Turbine Oil 68", "TurboFlow 68"],
+        "tp ep 32": ["Turbo EP 32", "Turbine Oil EP 32", "TurboGuard EP 32"],
+        "tp ep 46": ["Turbo EP 46", "Turbine Oil EP 46", "TurboGuard EP 46"],
+        "quenching oil 32": ["CoolFusion 32", "Quenching Oil 32"],
+        "quenching oil 46": ["CoolFusion 46", "Quenching Oil 46"],
+        "quenching oil 68": ["CoolFusion 68", "Quenching Oil 68"],
+        "quenching oil 100": ["CoolFusion 100", "Quenching Oil 100"],
+        "quenching oil 150": ["CoolFusion 150", "Quenching Oil 150"],
+        "quenching oil 220": ["CoolFusion 220", "Quenching Oil 220"],
+        "quenching oil 320": ["CoolFusion 320", "Quenching Oil 320"],
         "m 10dm sae 30 api cd гост 8581-78": "M-10DM",
         "m 10g2k sae 30 api cc гост 8581-78": "M-10G2K",
         "м-14в2 гост 12337-84": "M-14B2",
@@ -486,10 +797,16 @@
         "transmission 140 gl-1": [
           "Transmission Oil 140 GL-1",
           "Transmission 140 GL-1",
+          "TransMax 140 GL-1",
+          "TransPro 140 GL-1",
+          "TransGuard 140 GL-1",
         ],
         "transmission ep 140 gl-5": [
           "Transmission Oil EP 140 GL-5",
           "Transmission EP 140 GL-5",
+          "TransMax EP 140 GL-5",
+          "TransPro EP 140 GL-5",
+          "TransGuard EP 140 GL-5",
         ],
         "80w90 gl-4": "80W-90 GL-4",
         "75w90 gl-4": "75W-90 GL-4",
@@ -502,214 +819,274 @@
           "Transmission Oil 75W-90 LS GL-5",
           "TransMax 75W-90 LS GL-5",
           "Transmission 75W-90 LS GL-5",
+          "TransPro 75W-90 LS GL-5",
+          "TransGuard 75W-90 LS GL-5",
         ],
         "transmission 80w-90 gl-5 ls": [
           "Transmission 80W-90 LS GL-5",
           "Transmission Oil 80W-90 LS GL-5",
+          "TransMax 80W-90 LS GL-5",
+          "TransPro 80W-90 LS GL-5",
+          "TransGuard 80W-90 LS GL-5",
         ],
         "transmission 85w-90 gl-5 ls": [
           "Transmission 85W-90 LS GL-5",
           "Transmission Oil 85W-90 LS GL-5",
+          "TransMax 85W-90 LS GL-5",
+          "TransPro 85W-90 LS GL-5",
+          "TransGuard 85W-90 LS GL-5",
         ],
         "synthetic transmission 75w-140 gl-5 ls": [
           "Transmission 75W-140 LS GL-5",
           "Transmission Oil 75W-140 LS GL-5",
           "TransMax 75W-140 LS GL-5",
+          "TransPro 75W-140 LS GL-5",
+          "TransGuard 75W-140 LS GL-5",
         ],
         "transmission 85w140 gl-5 ls": [
           "Transmission 85W-140 LS GL-5",
           "Transmission Oil 85W-140 LS GL-5",
           "TransMax 85W-140 LS GL-5",
+          "TransPro 85W-140 LS GL-5",
+          "TransGuard 85W-140 LS GL-5",
         ],
         "transmission 75w-90 gl-5/mt-1": [
           "Transmission Oil 75W-90 GL-5/MT-1",
           "TransMax 75W-90 GL-5/MT-1",
         ],
-        "hydraulic oil 32": ["Hydraulic 32", "Hydraulic Oil 32", "HydroMax 32"],
-        "hydraulic oil 46": ["Hydraulic 46", "Hydraulic Oil 46", "HydroMax 46"],
-        "hydraulic oil 68": ["Hydraulic 68", "Hydraulic Oil 68", "HydroMax 68"],
+        "hydraulic oil 32": [
+          "Hydraulic 32",
+          "Hydraulic Oil 32",
+          "HydroMax 32",
+          "HydroMax 32",
+        ],
+        "hydraulic oil 46": [
+          "Hydraulic 46",
+          "Hydraulic Oil 46",
+          "HydroMax 46",
+          "HydroMax 46",
+        ],
+        "hydraulic oil 68": [
+          "Hydraulic 68",
+          "Hydraulic Oil 68",
+          "HydroMax 68",
+          "HydroMax 58",
+        ],
         "hydraulic oil 100": [
           "Hydraulic 100",
           "Hydraulic Oil 100",
+          "HydroMax 100",
           "HydroMax 100",
         ],
         "hydraulic oil 150": [
           "Hydraulic 150",
           "Hydraulic Oil 150",
           "HydroMax 150",
+          "HydroMax 150",
         ],
         "hydraulic oil 220": [
           "Hydraulic 220",
           "Hydraulic Oil 220",
+          "HydroMax 220",
           "HydroMax 220",
         ],
         "hydraulic oil 320": [
           "Hydraulic 320",
           "Hydraulic Oil 320",
           "HydroMax 320",
+          "HydroMax 320",
         ],
         "hydraulic oil 22 din 51524 part ii": [
           "Hydraulic HLP 22",
           "Hydraulic Oil HLP 22",
           "HydroMax HLP 22",
+          "HydroPro HLP 22",
         ],
         "hydraulic oil 32 din 51524 part ii": [
           "Hydraulic HLP 32",
           "Hydraulic Oil HLP 32",
           "HydroMax HLP 32",
+          "HydroPro HLP 32",
         ],
         "hydraulic oil 46 din 51524 part ii": [
           "Hydraulic HLP 46",
-          "Hydraulic  Oil HLP 46",
+          "Hydraulic Oil HLP 46",
+          "HydroPro HLP 46",
         ],
         "hydraulic oil 68 din 51524 part ii": [
           "Hydraulic HLP 68",
           "Hydraulic Oil HLP 68",
           "HydroMax HLP 68",
+          "HydroPro HLP 68",
         ],
         "hydraulic oil 100 din 51524 part ii": [
           "Hydraulic HLP 100",
           "Hydraulic Oil HLP 100",
           "HydroMax HLP 100",
+          "HydroPro HLP 100",
         ],
         "hydraulic oil 150 din 51524 part ii": [
           "Hydraulic Oil HLP 150",
           "HydroMax HLP 150",
           "Hydraulic HLP 150",
+          "HydroPro HLP 150",
         ],
         "hydraulic oil 220 din 51524 part ii": [
           "Hydraulic HLP 220",
           "Hydraulic Oil HLP 220",
           "HydroMax HLP 220",
+          "HydroPro HLP 220",
         ],
         "hydraulic oil 320 din 51524 part ii": [
           "Hydraulic HLP 320",
           "Hydraulic Oil HLP 320",
           "HydroMax HLP 320",
+          "HydroPro HLP 320",
         ],
         "hydraulic oil 22 zn free": [
           "Hydraulic HLP 22 Zinc Free",
           "Hydraulic Oil HLP 22 Zinc Free",
           "HydroMax HLP 22 Zinc Free",
+          "HydroPro HLP 22 Zinc-Free",
         ],
         "hydraulic oil 32 zn free": [
           "Hydraulic HLP 32 Zinc Free",
           "Hydraulic Oil HLP 32 Zinc Free",
           "HydroMax HLP 32 Zinc Free",
+          "HydroPro HLP 32 Zinc-Free",
         ],
         "hydraulic oil 46 zn free": [
           "Hydraulic HLP 46 Zinc Free",
           "Hydraulic Oil HLP 46 Zinc Free",
           "HydroMax HLP 46 Zinc Free",
+          "HydroPro HLP 46 Zinc-Free",
         ],
         "hydraulic oil 68 zn free": [
           "Hydraulic HLP 68 Zinc Free",
           "Hydraulic Oil HLP 68 Zinc Free",
           "HydroMax HLP 68 Zinc Free",
+          "HydroPro HLP 68 Zinc-Free",
         ],
         "hydraulic oil 100 zn free": [
           "Hydraulic HLP 100 Zinc Free",
           "Hydraulic Oil HLP 100 Zinc Free",
           "HydroMax HLP 100 Zinc Free",
+          "HydroPro HLP 100 Zinc-Free",
         ],
         "hvlp 15 din 51524 part 3": [
           "Hydraulic HVLP 15",
           "Hydraulic Oil HVLP 15",
           "HydroMax HVLP 15",
+          "HydroCore HVLP 15",
         ],
         "hvlp 22 din 51524 part 3": [
           "Hydraulic HVLP 22",
           "Hydraulic Oil HVLP 22",
           "HydroMax HVLP 22",
+          "HydroCore HVLP 22",
         ],
         "hvlp 32 din 51524 part 3": [
           "Hydraulic HVLP 32",
           "Hydraulic Oil HVLP 32",
           "HydroMax HVLP 32",
+          "HydroCore HVLP 32",
         ],
         "hvlp 46 din 51524 part 3": [
           "Hydraulic HVLP 46",
           "Hydraulic Oil HVLP 46",
           "HydroMax HVLP 46",
+          "HydroCore HVLP 46",
         ],
         "hvlp 68 din 51524 part 3": [
           "Hydraulic HVLP 68",
           "Hydraulic Oil HVLP 68",
           "HydroMax HVLP 68",
+          "HydroCore HVLP 68",
         ],
         "hvlp 100 din 51524 part 3": [
           "Hydraulic HVLP 100",
           "Hydraulic Oil HVLP 100",
           "HydroMax HVLP 100",
+          "HydroCore HVLP 100",
         ],
         "hvlp 150 din 51524 part 3": [
           "Hydraulic Oil HVLP 150",
           "HydroMax HVLP 150",
           "Hydraulic HVLP 150",
+          "HydroCore HVLP 150",
         ],
         "hvlp 22 zn free": [
           "Hydraulic HVLP 22 Zinc Free",
           "Hydraulic Oil HVLP 22 Zinc Free",
           "HydroMax HVLP 22 Zinc Free",
+          "HydroCore HVLP 22 Zinc-Free",
         ],
         "hvlp 32 zn free": [
           "Hydraulic HVLP 32 Zinc Free",
           "Hydraulic Oil HVLP 32 Zinc Free",
           "HydroMax HVLP 32 Zinc Free",
+          "HydroCore HVLP 32 Zinc-Free",
         ],
         "hvlp 46 zn free": [
           "Hydraulic HVLP 46 Zinc Free",
           "Hydraulic Oil HVLP 46 Zinc Free",
           "HydroMax HVLP 46 Zinc Free",
+          "HydroCore HVLP 46 Zinc-Free",
         ],
         "hvlp 68 zn free": [
           "Hydraulic HVLP 68 Zinc Free",
           "Hydraulic Oil HVLP 68 Zinc Free",
           "HydroMax HVLP 68 Zinc Free",
+          "HydroCore HVLP 68 Zinc-Free",
         ],
         "hydraulic hlpd 22": [
           "Hydraulic Oil HLPD 22",
           "HydroMax HLPD 22",
           "Hydraulic HLPD 22",
+          "HydroGuard HLPD 22",
         ],
         "hydraulic hlpd 32": [
           "Hydraulic Oil HLPD 32",
           "HydroMax HLPD 32",
           "Hydraulic HLPD 32",
+          "HydroGuard HLPD 32",
         ],
         "hydraulic hlpd 46": [
           "Hydraulic Oil HLPD 46",
           "HydroMax HLPD 46",
           "Hydraulic HLPD 46",
+          "HydroGuard HLPD 46",
         ],
         "hydraulic hlpd 68": [
           "Hydraulic Oil HLPD 68",
           "HydroMax HLPD 68",
           "Hydraulic HLPD 68",
+          "HydroGuard HLPD 68",
         ],
         "hydraulic hvlpd 46": [
           "Hydraulic Oil HVLPD 46",
           "HydroMax HVLPD 46",
           "Hydraulic HVLPD 46",
+          "HydroGuard HVLPD 46",
         ],
-        "nauta c25": "Marine Oil C25",
-        "nauta c40": "Marine Oil C40",
-        "nauta c55": "Marine Oil C55",
-        "nauta c70": "Marine Oil C70",
-        "nauta c100": "Marine Oil C100",
-        "nauta c140": "Marine Oil C140",
-        "nauta t3015": "Marine Oil T3015",
-        "nauta t4015": "Marine Oil T4015",
-        "nauta t4055": "Marine Oil T4055",
-        "nauta t4030": "Marine Oil T4030",
-        "nauta t3040": "Marine Oil T3040",
-        "nauta t3030": "Marine Oil T3030",
-        "nauta t4040": "Marine Oil T4040",
-        "nauta t3020": "Marine Oil T3020",
-        "nauta t4020": "Marine Oil T4020",
-        "nauta t3012": "Marine Oil T3012",
-        "nauta t4012": "Marine Oil T4012",
-        "nauta t3055": "Marine Oil T3055",
+        "nauta c25": ["Marine Oil C25", "Nauta C25"],
+        "nauta c40": ["Marine Oil C40", "Nauta C40"],
+        "nauta c55": ["Marine Oil C55", "Nauta C55"],
+        "nauta c70": ["Marine Oil C70", "Nauta C70"],
+        "nauta c100": ["Marine Oil C100", "Nauta C100"],
+        "nauta c140": ["Marine Oil C140", "Nauta C140"],
+        "nauta t3015": ["Marine Oil T3015", "Nauta T3015"],
+        "nauta t4015": ["Marine Oil T4015", "Nauta T4015"],
+        "nauta t4055": ["Marine Oil T4055", "Nauta T4055"],
+        "nauta t4030": ["Marine Oil T4030", "Nauta T4030"],
+        "nauta t3040": ["Marine Oil T3040", "Nauta T3040"],
+        "nauta t3030": ["Marine Oil T3030", "Nauta T3030"],
+        "nauta t4040": ["Marine Oil T4040", "Nauta T4040"],
+        "nauta t3020": ["Marine Oil T3020", "Nauta T3020"],
+        "nauta t4020": ["Marine Oil T4020", "Nauta T4020"],
+        "nauta t3012": ["Marine Oil T3012", "Nauta T3012"],
+        "nauta t4012": ["Marine Oil T4012", "Nauta T4012"],
+        "nauta t3055": ["Marine Oil T3055", "Nauta T3055"],
         "antifreeze pink blue green red ready g12 -40":
           "Antifreeze G11 Ready Mix -40°C",
         "antifreeze pink blue green oncantrate": "Antifreeze G11 Concentrate",
@@ -721,20 +1098,104 @@
         "spg4 5w-20 sn/cf (sl/cf)": "5W-20 SP SN CF (SL/CF)",
         "5w-20 sp sn cf": "Super SPG4 5W-20 SN/CF",
         "tf dexron iii": "ATF SP-III",
-        "gas engine oil sae 40": ["Renewa GEO 40", "Gas Engine Oil SAE 40"],
-        "5w-20 sp sn cf (sl/cf)": "SuperMax 5W-20 SN/CF",
-        "lpg 10w-30": ["SuperMax LPG 10W- 30", "Super LPG 10W-30"],
-        "lpg 10w-40": ["SuperMax LPG 10W- 40", "Super LPG 10W-40"],
-        "cng 10w-40": ["SuperMax CNG 10W- 40", "Super CNG 10W-40"],
-        "cng 15w-40": ["SuperMax CNG 15W- 40", "Super CNG 15W-40"],
+        "gas engine oil sae 40": [
+          "Renewa GEO 40",
+          "Gas Engine Oil SAE 40",
+          "Accelera GEO SAE 40",
+        ],
+        "5w-20 sp sn cf (sl/cf)": [
+          "SuperMax 5W-20 SN/CF",
+          "Eco Synth 5W-20 SN/CF",
+        ],
+        "lpg 10w-30": [
+          "SuperMax LPG 10W- 30",
+          "Super LPG 10W-30",
+          "Engine Oil LPG 10W-30",
+          "Eco Synth LPG 10W- 30",
+          "Avtoil™ LPG 10W-30",
+        ],
+        "lpg 10w-40": [
+          "SuperMax LPG 10W- 40",
+          "Super LPG 10W-40",
+          "Engine Oil LPG 10W-40",
+          "Eco Synth LPG 10W- 40",
+          "Avtoil™ LPG 10W-40",
+        ],
+        "cng 10w-40": [
+          "SuperMax CNG 10W- 40",
+          "Super CNG 10W-40",
+          "Engine Oil CNG 10W-40",
+          "HDEO CNG 10W- 40",
+          "Avtoil™ CNG 10W-40",
+        ],
+        "cng 15w-40": [
+          "SuperMax CNG 15W- 40",
+          "Super CNG 15W-40",
+          "Engine Oil CNG 15W-40",
+          "HDEO CNG 15W- 40",
+          "Avtoil™ CNG 15W-40",
+        ],
         "hydraulic xtreme 32 ult": [
           "HydroMax Polar 32 ULT",
           "Hydraulic Xtreme 32 ULT",
+          "Hydraulic Oil Arctic 32 ULT",
+          "ArcticFlow 32 ULT",
         ],
+        "10W-30 LA": [
+          "HDEO 10W-30 LE",
+          "EcoSpectra UHPD 10W-30 LA",
+          "EcoGlide 10W-30 LA",
+          "UHPD 10W-30 LA ",
+        ],
+        "10W-40 LA": [
+          "HDEO 10W-40 LE",
+          "EcoSpectra UHPD 10W-40 LA",
+          "EcoGlide 10W-40 LA",
+          "UHPD 10W-40 LA ",
+        ],
+        "circulating oil 32": ["Circulating Oil 32", "CirculaMax 32 AW"],
+        "circulating oil 46": ["Circulating Oil 46", "CirculaMax 46 AW"],
+        "circulating oil 68": ["Circulating Oil 68", "CirculaMax 68 AW"],
+        "circulating oil 100": ["Circulating Oil 100", "CirculaMax 100 AW"],
+        "circulating oil 220": ["Circulating Oil 220", "CirculaMax 220 AW"],
+        "circulating oil 320": ["Circulating Oil 320", "CirculaMax 320 AW"],
+        "circulating oil 460": ["Circulating Oil 460", "CirculaMax 460 AW"],
+        "circulating oil 100 rm": [
+          "Circulating Oil 100 RM",
+          "CirculaFlex 100 RM",
+        ],
+        "circulating oil 150 rm": [
+          "Circulating Oil 150 RM",
+          "CirculaFlex 150 RM",
+        ],
+        "circulating oil 220 rm": [
+          "Circulating Oil 220 RM",
+          "CirculaFlex 220 RM",
+        ],
+        "circulating oil 320 rm": [
+          "Circulating Oil 320 RM",
+          "CirculaFlex 320 RM",
+        ],
+        "circulating oil 460 rm": [
+          "Circulating Oil 460 RM",
+          "CirculaFlex 460 RM",
+        ],
+        "Mould Oil 10": ["Mould Oil 10", "MouldMaster 10"],
+        "Mould Oil 15": ["Mould Oil 15", "MouldMaster 15"],
+        "Mould Oil 32": ["Mould Oil 32", "MouldMaster 32"],
+        "Mould Oil 100": ["Mould Oil 100", "MouldMaster 100"],
+        "Mould Oil 150": ["Mould Oil 150", "MouldMaster 150"],
+        "heat transfer oil 32": ["Heat Transfer Oil 32", "TermoPlus HT 32"],
+        "heat transfer oil 46": ["Heat Transfer Oil 46", "TermoPlus HT 46"],
+        "heat transfer oil 68": ["Heat Transfer Oil 68", "TermoPlus HT 68"],
       };
-
       const productPatterns = {
-        oem: ["top quality", "premium - top quality", "premium-top quality"],
+        oem: [
+          "top quality",
+          "premium - top quality",
+          "premium-top quality",
+          "Top Quality",
+        ],
         premium: [
           "premium",
           "premium - standart",
@@ -742,6 +1203,7 @@
           "standart - premium",
           "standart-premium",
           "standart alternativ",
+          "premium-top quality",
           "full premium",
           "polimerli versiya / premium",
           "polimerli versiya/premium",
@@ -770,7 +1232,6 @@
           "Müşteri Onayı Olmadan Verilmemeli",
         ],
       };
-
       const sizes = [
         "1L",
         "1.5L",
@@ -794,31 +1255,8 @@
         "0.25L",
         "0.5L",
       ];
-
-      const literSizes = [
-        "0.25L",
-        "0.5L",
-        "1L",
-        "1.5L",
-        "4L",
-        "5L",
-        "6L",
-        "7L",
-        "10L",
-        "18L",
-        "20L",
-        "25L",
-        "30L",
-        "60L",
-        "200L",
-        "1000L",
-      ];
-      const kiloSizes = ["4kg", "9kg", "14kg", "18kg", "180kg"];
-      const allProductSizes = [...literSizes, ...kiloSizes];
-
       const packagingMaterials = ["Bidon", "Qapaq", "Etiket", "Qutu", "Palet"];
       let allMaterials = [...packagingMaterials];
-
       const rowsPerPage = 10;
       let currentPage = {
         sheet1: 1,
@@ -827,11 +1265,9 @@
         premium: 1,
         oem: 1,
       };
-
       document
         .getElementById("fileInput")
         .addEventListener("change", handleFile);
-
       function sheetToArrayOfArrays(sheet) {
         const result = [];
         if (!sheet || !sheet["!ref"]) return result;
@@ -869,7 +1305,6 @@
         }
         return Array.from(baseOils).sort();
       }
-
       function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -890,16 +1325,11 @@
             );
             dynamicBaseOils = extractDynamicBaseOils(sheet1);
             allMaterials = [...packagingMaterials, ...dynamicBaseOils];
-            console.log("Dynamic Base Oils:", dynamicBaseOils);
-            console.log("All Materials:", allMaterials);
             originalSheet1 = sheet1;
             originalSheet2 = sheet2;
             processedData.sheet1 = sheet1;
             processedData.sheet2 = sheet2;
             categorizeProducts(sheet1, sheet2);
-
-            console.log("Processed Data:", originalSheet2);
-
             for (const key in currentPage) {
               currentPage[key] = 1;
             }
@@ -928,9 +1358,59 @@
               "Fayl oxunarkən xəta baş verdi: " + error.message,
               "error"
             );
+            console.error(error);
           }
         };
         reader.readAsArrayBuffer(file);
+      }
+      function normalizeText(text) {
+        if (!text) return "";
+        return text
+          .toString()
+          .toLowerCase()
+          .replace(/и/g, "i")
+          .replace(/а/g, "a")
+          .replace(/е/g, "e")
+          .replace(/о/g, "o")
+          .replace(/у/g, "u")
+          .replace(/р/g, "r")
+          .replace(/т/g, "t")
+          .replace(/п/g, "p")
+          .replace(/с/g, "s")
+          .replace(/д/g, "d")
+          .replace(/ф/g, "f")
+          .replace(/г/g, "g")
+          .replace(/х/g, "h")
+          .replace(/й/g, "j")
+          .replace(/к/g, "k")
+          .replace(/л/g, "l")
+          .replace(/з/g, "z")
+          .replace(/ж/g, "zh")
+          .replace(/б/g, "b")
+          .replace(/н/g, "n")
+          .replace(/м/g, "m")
+          .replace(/ц/g, "ts")
+          .replace(/в/g, "v")
+          .replace(/щ/g, "sch")
+          .replace(/ш/g, "sh")
+          .replace(/ч/g, "ch")
+          .replace(/ъ/g, "")
+          .replace(/ы/g, "y")
+          .replace(/ь/g, "")
+          .replace(/э/g, "e")
+          .replace(/ю/g, "yu")
+          .replace(/я/g, "ya")
+          .replace(/ğ/g, "g")
+          .replace(/ü/g, "u")
+          .replace(/ş/g, "s")
+          .replace(/ı/g, "i")
+          .replace(/ö/g, "o")
+          .replace(/ç/g, "c")
+          .replace(/ə/g, "e")
+          .replace(/\r\n/g, " ")
+          .replace(/[^\w\s-]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       }
 
       function categorizeProducts(sheet1, sheet2) {
@@ -940,19 +1420,8 @@
         categoryProducts.standart = "";
         categoryProducts.premium = "";
         categoryProducts.oem = "";
-        const processedProductIds = new Set();
-        const headerRowForSizes = sheet1[0] || [];
-        const sizeColumnMap = {};
 
-        allProductSizes.forEach((size) => {
-          const columnIndex = headerRowForSizes.findIndex(
-            (header) => header && header.trim() === size
-          );
-          if (columnIndex !== -1) {
-            sizeColumnMap[size] = columnIndex;
-          }
-        });
-
+        const processedSheet2ProductIds = new Set();
         const cleanId = (id) => {
           if (!id) return null;
           return id.toString().trim().replace(/\s+/g, " ").toLowerCase();
@@ -968,7 +1437,7 @@
             let blockText = "";
             let blockEndIndex = i;
             let additivesData = {};
-            let blockCharacteristics = {};
+            let hColumnValue = null;
 
             for (let j = i; j < sheet1.length; j++) {
               const currentRow = sheet1[j];
@@ -977,27 +1446,7 @@
                 break;
               }
               blockEndIndex = j;
-
-              if (currentRow[1]) {
-                blockText += " " + currentRow[1];
-                const cellValue = currentRow[1].trim();
-                let materialName = null;
-                for (const mat of packagingMaterials) {
-                  if (cellValue.startsWith(mat)) {
-                    materialName = mat;
-                    break;
-                  }
-                }
-                if (materialName) {
-                  blockCharacteristics[materialName] = {};
-                  for (const size in sizeColumnMap) {
-                    const columnIndex = sizeColumnMap[size];
-                    const characteristic = currentRow[columnIndex];
-                    blockCharacteristics[materialName][size] =
-                      characteristic || "-";
-                  }
-                }
-              }
+              if (currentRow[1]) blockText += " " + currentRow[1];
               const additiveCode = currentRow[2];
               const additivePercent = currentRow[3];
               if (
@@ -1007,49 +1456,18 @@
               ) {
                 additivesData[additiveCode.trim()] = additivePercent;
               }
-            }
-
-            const normalizedBlockText = normalizeText(blockText);
-            const foundMatches = {};
-
-            for (const pattern of productPatterns.oem) {
-              if (normalizedBlockText.includes(normalizeText(pattern))) {
-                foundMatches["oem"] = pattern;
-              }
-            }
-            for (const pattern of productPatterns.premium) {
-              if (normalizedBlockText.includes(normalizeText(pattern))) {
-                foundMatches["premium"] = pattern;
-              }
-            }
-            for (const pattern of productPatterns.standart) {
-              if (normalizedBlockText.includes(normalizeText(pattern))) {
-                foundMatches["standart"] = pattern;
+              const hValue = currentRow[7];
+              if (hValue && String(hValue).trim() !== "") {
+                hColumnValue = hValue;
               }
             }
 
             const normalizedMapKey = normalizeText(productNameInBlock);
-            let searchNames = null; // Başlanğıc dəyəri null təyin edirik
-
-            // productNameMap-in hər bir açarını (rawKey) yoxlayırıq
-            for (const rawKey in productNameMap) {
-              // Map-dakı hər bir açarı da eyni şəkildə normallaşdırırıq
-              if (normalizeText(rawKey) === normalizedMapKey) {
-                // Əgər uyğunluq tapılsa, dəyəri götürüb döngünü dayandırırıq
-                searchNames = productNameMap[rawKey];
-                break;
-              }
-            }
-
-            // Əgər yuxarıdakı döngüdə heç bir uyğunluq tapılmazsa,
-            // o zaman ilkin məhsul adından istifadə edirik
-            if (!searchNames) {
-              searchNames = productNameInBlock;
-            }
+            let searchNames =
+              productNameMap[normalizedMapKey] || productNameInBlock;
             if (!Array.isArray(searchNames)) {
               searchNames = [searchNames];
             }
-
             const normalizedSearchNames = searchNames.map((name) =>
               normalizeText(String(name))
             );
@@ -1057,133 +1475,138 @@
             const potentialMatches = [];
             for (let k = 1; k < sheet2.length; k++) {
               const sheet2Row = sheet2[k];
-              const productIdFromSheet2 = sheet2Row ? sheet2Row[0] : undefined;
               if (
                 !sheet2Row ||
                 !sheet2Row[1] ||
-                !productIdFromSheet2 ||
-                cleanId(productIdFromSheet2) === "id"
-              ) {
+                !sheet2Row[0] ||
+                normalizeText(sheet2Row[0]) === "id"
+              )
                 continue;
-              }
               const sheet2ProductName = normalizeText(sheet2Row[1]);
-              // BU YENİ KODU ƏLAVƏ EDİN
               const isMatch = normalizedSearchNames.some((name) => {
-                // Sheet1-dəki adın (name) Sheet2-dəki məhsul adının (sheet2ProductName) içində
-                // tam bir söz və ya ifadə kimi uyğun gəlməsini təmin edirik.
-                // Nümunə: '68' adı '680' ilə deyil, yalnız ' 68 ' və ya '68.' kimi formalarla uyğunlaşacaq.
+                if (!name) return false;
                 const escapedName = escapeRegExp(name);
                 const regex = new RegExp(`\\b${escapedName}\\b`);
-                const regexMatch = regex.test(sheet2ProductName);
-
-                // Əgər regular expression ilə uyğunluq yoxdursa, bu səhv uyğunlaşmadır.
-                if (!regexMatch) {
-                  return false;
-                }
-
-                // Mövcud 'VA' qaydasını regex uyğunlaşmasından sonra tətbiq edirik.
-                const isProblematicVAMatch =
-                  !name.includes(" va") && sheet2ProductName.includes(" va");
-
-                if (isProblematicVAMatch) {
-                  return false; // Regex uyğun gəlsə belə, bu xüsusi qayda uyğunlaşmanı ləğv edir.
-                }
-
-                // Əgər həm regex, həm də 'VA' yoxlamasından keçərsə, bu düzgün uyğunlaşmadır.
-                return true;
+                return regex.test(sheet2ProductName);
               });
               if (isMatch) {
                 potentialMatches.push(sheet2Row);
               }
             }
 
-            // --- DƏYİŞİKLİK BAŞLADI: 'bestMatchRow' məntiqi ləğv edildi ---
-            // 'bestMatchRow' seçmək əvəzinə, tapılan BÜTÜN uyğunluqlar üçün dövr yaradırıq.
             if (potentialMatches.length > 0) {
+              const normalizedBlockText = normalizeText(blockText);
+              const foundCategories = {};
+              if (
+                productPatterns.oem.some((p) =>
+                  normalizedBlockText.includes(normalizeText(p))
+                )
+              )
+                foundCategories.oem = productPatterns.oem[0];
+              if (
+                productPatterns.premium.some((p) =>
+                  normalizedBlockText.includes(normalizeText(p))
+                )
+              )
+                foundCategories.premium = productPatterns.premium[0];
+              if (
+                productPatterns.standart.some((p) =>
+                  normalizedBlockText.includes(normalizeText(p))
+                )
+              )
+                foundCategories.standart = productPatterns.standart[0];
+              const numMatches = Object.keys(foundCategories).length;
+
               for (const matchRow of potentialMatches) {
-                // Hər bir uyğun məhsul üçün dövr
                 const rawProductId = matchRow[0];
                 const cleanedProductId = cleanId(rawProductId);
+                const finalProductName = matchRow[1];
+                processedSheet2ProductIds.add(cleanedProductId);
 
-                if (!processedProductIds.has(cleanedProductId)) {
-                  const finalProductName = matchRow[1];
-                  const numMatches = Object.keys(foundMatches).length;
-
-                  const processCategory = (category, matchedPattern) => {
-                    const categoryData = generateSingleRowCategoryData(
-                      headerRow,
-                      matchRow, // 'bestMatchRow' əvəzinə 'matchRow' istifadə olunur
-                      category,
-                      finalProductName,
-                      matchedPattern,
-                      additivesData,
-                      blockCharacteristics
-                    );
-                    processedData[category].push(categoryData);
-                    if (!categoryProducts[category]) {
-                      categoryProducts[category] = finalProductName;
-                    }
-                  };
-
-                  if (numMatches <= 1) {
-                    const matchedPattern =
-                      numMatches === 1
-                        ? Object.values(foundMatches)[0]
-                        : "Təyin edilməyib";
-                    ["standart", "premium", "oem"].forEach((cat) =>
-                      processCategory(cat, matchedPattern)
-                    );
-                  } else {
-                    for (const category in foundMatches) {
-                      processCategory(category, foundMatches[category]);
-                    }
+                const processCategory = (category, matchedPattern) => {
+                  const categoryData = generateSingleRowCategoryData(
+                    headerRow,
+                    matchRow,
+                    category,
+                    finalProductName,
+                    matchedPattern,
+                    additivesData,
+                    {},
+                    hColumnValue
+                  );
+                  processedData[category].push(categoryData);
+                  if (!categoryProducts[category]) {
+                    categoryProducts[category] = finalProductName;
                   }
-                  processedProductIds.add(cleanedProductId);
+                };
+
+                if (numMatches > 1) {
+                  for (const category in foundCategories) {
+                    processCategory(category, foundCategories[category]);
+                  }
+                } else {
+                  const matchedPattern =
+                    numMatches === 1
+                      ? Object.values(foundCategories)[0]
+                      : "Təyin edilməyib";
+                  ["standart", "premium", "oem"].forEach((cat) =>
+                    processCategory(cat, matchedPattern)
+                  );
                 }
               }
             }
-            // --- DƏYİŞİKLİK BİTDİ ---
             i = blockEndIndex;
           }
         }
 
-        // Add unprocessed records from Sheet2 to all categories
         for (let k = 1; k < sheet2.length; k++) {
           const sheet2Row = sheet2[k];
           if (!sheet2Row || !sheet2Row[0] || !sheet2Row[1]) continue;
-
           const rawProductId = sheet2Row[0];
           const cleanedProductId = cleanId(rawProductId);
-
           if (
             cleanedProductId &&
             cleanedProductId !== "id" &&
-            !processedProductIds.has(cleanedProductId)
+            !processedSheet2ProductIds.has(cleanedProductId)
           ) {
             const finalProductName = sheet2Row[1];
             const processCategory = (category) => {
-              const emptyHeaderRow = [];
               const categoryData = generateSingleRowCategoryData(
-                emptyHeaderRow,
+                [],
                 sheet2Row,
                 category,
                 finalProductName,
-                "Sheet2'den alındı",
+                "Sheet2'dən (eşleşmesiz)",
                 {},
-                {}
+                {},
+                null
               );
               processedData[category].push(categoryData);
               if (!categoryProducts[category]) {
                 categoryProducts[category] = finalProductName;
               }
             };
-
             ["standart", "premium", "oem"].forEach((cat) =>
               processCategory(cat)
             );
-            processedProductIds.add(cleanedProductId);
           }
         }
+
+        processedData.standart = Array.from(
+          new Map(
+            processedData.standart.map((item) => [item.productId, item])
+          ).values()
+        );
+        processedData.premium = Array.from(
+          new Map(
+            processedData.premium.map((item) => [item.productId, item])
+          ).values()
+        );
+        processedData.oem = Array.from(
+          new Map(
+            processedData.oem.map((item) => [item.productId, item])
+          ).values()
+        );
       }
 
       function generateSingleRowCategoryData(
@@ -1193,7 +1616,8 @@
         productName,
         matchedPattern,
         additivesData,
-        blockCharacteristics
+        blockCharacteristics,
+        hValue
       ) {
         const productId = sheet2Row[0];
         const sizeIndexMap = {
@@ -1219,9 +1643,7 @@
           "0.25L": 21,
           "0.5L": 22,
         };
-
         const packagingData = {};
-
         for (const size in sizeIndexMap) {
           const index = sizeIndexMap[size];
           if (
@@ -1232,7 +1654,6 @@
             packagingData[size] = sheet2Row[index];
           }
         }
-
         const materialValues = {};
         for (const material in additivesData) {
           if (Object.hasOwnProperty.call(additivesData, material)) {
@@ -1245,10 +1666,12 @@
         return {
           productId: productId,
           productName: productName,
+          hValue: hValue,
           materials: materialValues,
           packagingData: packagingData,
         };
       }
+
       function displayCategoryTableWithPagination(tableId, dataKey, allData) {
         const table = document.getElementById(tableId);
         const paginationDiv = document.getElementById(`${dataKey}Pagination`);
@@ -1258,45 +1681,7 @@
           paginationDiv.innerHTML = "";
           return;
         }
-
-        const sizeIndexMap = {
-          "1L": 2,
-          "1.5L": 3,
-          "4L": 4,
-          "5L": 5,
-          "6L": 6,
-          "7L": 7,
-          "10L": 8,
-          "18L": 9,
-          "20L": 10,
-          "25L": 11,
-          "30L": 12,
-          "60L": 13,
-          "200L": 14,
-          "1000L": 15,
-          "4kg": 16,
-          "9kg": 17,
-          "14kg": 18,
-          "18kg": 19,
-          "180kg": 20,
-          "0.25L": 21,
-          "0.5L": 22,
-        };
-
-        const sizes = Object.keys(sizeIndexMap);
-
-        const activeMaterials = new Set();
-        allData.forEach((row) => {
-          if (row.materials) {
-            Object.keys(row.materials).forEach((material) =>
-              activeMaterials.add(material)
-            );
-          }
-        });
-
-        const materialHeaders = Array.from(activeMaterials).sort();
         const totalRows = allData.length;
-        console.log(allData, "allData");
         const totalPages = Math.ceil(totalRows / rowsPerPage);
         const startRowIndex = (currentPage[dataKey] - 1) * rowsPerPage;
         const endRowIndex = Math.min(
@@ -1304,11 +1689,11 @@
           allData.length
         );
         const dataToDisplay = allData.slice(startRowIndex, endRowIndex);
-        console.log(dataToDisplay, "--------------------");
+
         let html = "<thead><tr>";
         html += "<th>Məhsulun ID</th>";
         html += "<th>Məhsulun adı</th>";
-
+        html += "<th>Sıxlıq (qram)</th>";
         const maxMaterialGroups = Math.max(
           ...dataToDisplay.map((row) =>
             row.materials ? Object.keys(row.materials).length : 0
@@ -1327,6 +1712,7 @@
           html += "<tr>";
           html += `<td>${processCell(row.productId)}</td>`;
           html += `<td>${processCell(row.productName)}</td>`;
+          html += `<td>${processCell(row.hValue)}</td>`;
           const productMaterials = row.materials
             ? Object.keys(row.materials).sort()
             : [];
@@ -1341,114 +1727,23 @@
           for (let i = materialCount; i < maxMaterialGroups; i++) {
             html += "<td>-</td><td>-</td><td>-</td>";
           }
-
           sizes.forEach((size) => {
-            if (row.packagingData && row.packagingData[size]) {
-              const data = row.packagingData[size];
-              const formattedData = data
-                .replace(/\r\n/g, "<br>")
-                .replace(/\n/g, "<br>");
-              html += `<td>${formattedData}</td>`;
-            } else {
-              html += `<td>-</td>`;
-            }
+            const data =
+              row.packagingData && row.packagingData[size]
+                ? row.packagingData[size]
+                : "-";
+            const formattedData = data
+              .replace(/\r\n/g, "<br>")
+              .replace(/\n/g, "<br>");
+            html += `<td>${formattedData}</td>`;
           });
           html += "</tr>";
         });
-
         html += "</tbody>";
         table.innerHTML = html;
         renderPaginationControls(paginationDiv, dataKey, totalPages);
       }
-      function normalizeText(text) {
-        if (!text) return "";
-        return (
-          text
-            .toString()
-            .toLowerCase()
-            // Kiril karakterleri ekleyin
-            .replace(/и/g, "i")
-            .replace(/а/g, "a")
-            .replace(/е/g, "e")
-            .replace(/о/g, "o")
-            .replace(/у/g, "u")
-            .replace(/р/g, "r")
-            .replace(/т/g, "t")
-            .replace(/п/g, "p")
-            .replace(/с/g, "s")
-            .replace(/д/g, "d")
-            .replace(/ф/g, "f")
-            .replace(/г/g, "g")
-            .replace(/х/g, "h")
-            .replace(/й/g, "j")
-            .replace(/к/g, "k")
-            .replace(/л/g, "l")
-            .replace(/з/g, "z")
-            .replace(/ж/g, "zh")
-            .replace(/б/g, "b")
-            .replace(/н/g, "n")
-            .replace(/м/g, "m")
-            .replace(/ц/g, "ts")
-            .replace(/в/g, "v")
-            .replace(/щ/g, "sch")
-            .replace(/ш/g, "sh")
-            .replace(/ч/g, "ch")
-            .replace(/ъ/g, "")
-            .replace(/ы/g, "y")
-            .replace(/ь/g, "")
-            .replace(/э/g, "e")
-            .replace(/ю/g, "yu")
-            .replace(/я/g, "ya")
-            // Türkçe karakterler
-            .replace(/ğ/g, "g")
-            .replace(/ü/g, "u")
-            .replace(/ş/g, "s")
-            .replace(/ı/g, "i")
-            .replace(/ö/g, "o")
-            .replace(/ç/g, "c")
-            .replace(/ə/g, "e")
-            .replace(/\r\n/g, " ")
-            .replace(/[^\w\s-]/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-        );
-      }
 
-      function getMaterialCharacteristic(
-        material,
-        size,
-        productName,
-        blockCharacteristics
-      ) {
-        if (
-          blockCharacteristics &&
-          blockCharacteristics[material] &&
-          blockCharacteristics[material][size]
-        ) {
-          const dynamicValue = blockCharacteristics[material][size];
-          if (
-            dynamicValue &&
-            dynamicValue.trim() !== "-" &&
-            dynamicValue.trim() !== ""
-          ) {
-            return dynamicValue;
-          }
-        }
-        const formattedSize = size.endsWith("L")
-          ? size.replace("L", " L")
-          : size.replace("kg", " kg");
-        const fallbackCharacteristics = {
-          Bidon: `${formattedSize} Açıq Göy Aminol (öz istehsal)`,
-          Qapaq: `Qırmızı ${formattedSize} (50/22 telescopic)`,
-          Etiket: `${productName} (BK-06)`,
-          Qutu: `Kıpaj Aminol ${formattedSize}`,
-          Palet: "1.14x1.14",
-        };
-        if (dynamicBaseOils.includes(material)) {
-          return "<Xarakteristika yoxdur>";
-        }
-        return fallbackCharacteristics[material] || `${material} ${size}`;
-      }
       function updateCategoryInfo() {
         const categories = ["standart", "premium", "oem"];
         categories.forEach((category) => {
@@ -1480,37 +1775,6 @@
         if (element) {
           element.classList.add("active");
         }
-        if (tabName === "sheet1") {
-          displayTableWithPagination(
-            "sheet1Table",
-            "sheet1",
-            processedData.sheet1
-          );
-        } else if (tabName === "sheet2") {
-          displayTableWithPagination(
-            "sheet2Table",
-            "sheet2",
-            processedData.sheet2
-          );
-        } else if (tabName === "standart") {
-          displayCategoryTableWithPagination(
-            "standartTable",
-            "standart",
-            processedData.standart
-          );
-        } else if (tabName === "premium") {
-          displayCategoryTableWithPagination(
-            "premiumTable",
-            "premium",
-            processedData.premium
-          );
-        } else if (tabName === "oem") {
-          displayCategoryTableWithPagination(
-            "oemTable",
-            "oem",
-            processedData.oem
-          );
-        }
       }
       function showStatus(message, type) {
         const statusDiv = document.getElementById("status");
@@ -1527,44 +1791,9 @@
         if (!processedData.sheet1.length && !processedData.sheet2.length) {
           showStatus("Əvvəlcə fayl yükləyin!", "error");
           return;
-        } // YENİ YARDIMCI FONKSİYON: Birleşik metni parçalara ayırır. // Örnek: "Bidon-Değer1Qapaq-Değer2" -> { Bidon: "Değer1", Qapaq: "Değer2" }
-
-        const parsePackagingString = (str, components) => {
-          const parsedData = {};
-          components.forEach((c) => (parsedData[c] = "-")); // Tüm alanlara varsayılan değer ata
-
-          if (!str || str === "-") {
-            return parsedData;
-          }
-
-          for (let i = 0; i < components.length; i++) {
-            const currentComp = components[i];
-            const startIndex = str.indexOf(currentComp + "-");
-
-            if (startIndex === -1) continue;
-
-            let endIndex = str.length; // Sonraki bileşeni bulup kesme noktasını belirle
-            for (let j = 0; j < components.length; j++) {
-              if (i === j) continue;
-              const nextCompIndex = str.indexOf(
-                components[j] + "-",
-                startIndex + 1
-              );
-              if (nextCompIndex !== -1 && nextCompIndex < endIndex) {
-                endIndex = nextCompIndex;
-              }
-            }
-            const value = str
-              .substring(startIndex + currentComp.length + 1, endIndex)
-              .trim();
-            parsedData[currentComp] = value || "-";
-          }
-          return parsedData;
-        };
-
+        }
         try {
-          const wb = XLSX.utils.book_new(); // Orijinal sheet'leri ekle
-
+          const wb = XLSX.utils.book_new();
           if (processedData.sheet1.length > 0) {
             const ws1 = XLSX.utils.aoa_to_sheet(processedData.sheet1);
             XLSX.utils.book_append_sheet(wb, ws1, "Sheet1");
@@ -1573,18 +1802,8 @@
             const ws2 = XLSX.utils.aoa_to_sheet(processedData.sheet2);
             XLSX.utils.book_append_sheet(wb, ws2, "Sheet2");
           }
-
           const createCategorySheet = (data) => {
-            if (!data || data.length === 0) return null; // Sütunlara bölünecek anahtar kelimeler
-
-            const packagingComponents = [
-              "Bidon",
-              "Qapaq",
-              "Etiket",
-              "Qutu",
-              "Palet",
-            ];
-
+            if (!data || data.length === 0) return null;
             const allPossibleSizes = [
               ...new Set(
                 data.flatMap((row) =>
@@ -1597,30 +1816,27 @@
               if (numA !== numB) return numA - numB;
               return a.localeCompare(b);
             });
-
             const maxMaterialGroups = Math.max(
               ...data.map((row) =>
                 row.materials ? Object.keys(row.materials).length : 0
               ),
               0
-            ); // YENİ BAŞLIK OLUŞTURMA MANTIĞI
+            );
 
-            const headers = ["Məhsulun ID", "Məhsulun adı"];
+            const headers = ["Məhsulun ID", "Məhsulun adı", "Sıxlıq (qram)"];
             for (let i = 1; i <= maxMaterialGroups; i++) {
               headers.push(`MATERIAL ${i}`, `ÖLÇÜ VAHIDI ${i}`, `MIQDAR ${i}`);
-            } // Her bir boyut ve her bir parça için ayrı sütun başlığı oluştur
+            }
             allPossibleSizes.forEach((size) => {
-              packagingComponents.forEach((component) => {
-                headers.push(`${size} ${component}`); // Örn: "1L Bidon", "1L Qapaq"
-              });
-            }); // YENİ VERİ SATIRI OLUŞTURMA MANTIĞI
+              headers.push(size);
+            });
 
             const dataRows = data.map((row) => {
               const rowArray = [
                 processCell(row.productId),
                 processCell(row.productName),
+                processCell(row.hValue),
               ];
-
               const productMaterials = row.materials
                 ? Object.keys(row.materials).sort()
                 : [];
@@ -1634,42 +1850,27 @@
                 );
                 materialCount++;
               });
-
               for (let i = materialCount; i < maxMaterialGroups; i++) {
                 rowArray.push("-", "-", "-");
-              } // Her bir boyut için metni ayrıştır ve ilgili sütunlara yaz
-
+              }
               allPossibleSizes.forEach((size) => {
-                const combinedString =
+                const packagingString =
                   row.packagingData && row.packagingData[size]
                     ? row.packagingData[size]
                     : "-";
-                const parsedData = parsePackagingString(
-                  combinedString,
-                  packagingComponents
-                ); // Ayrıştırılmış verileri doğru sırayla sütunlara ekle
-
-                packagingComponents.forEach((component) => {
-                  rowArray.push(processCell(parsedData[component]));
-                });
+                rowArray.push(processCell(packagingString));
               });
-
               return rowArray;
             });
-
             return XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
           };
-
           const wsStandart = createCategorySheet(processedData.standart);
           if (wsStandart)
             XLSX.utils.book_append_sheet(wb, wsStandart, "Standart");
-
           const wsPremium = createCategorySheet(processedData.premium);
           if (wsPremium) XLSX.utils.book_append_sheet(wb, wsPremium, "Premium");
-
           const wsOem = createCategorySheet(processedData.oem);
           if (wsOem) XLSX.utils.book_append_sheet(wb, wsOem, "OEM");
-
           XLSX.writeFile(wb, "Processed_Engine_Oil_Data.xlsx");
           showStatus("Excel faylı uğurla yaradıldı!", "success");
         } catch (error) {
@@ -1680,7 +1881,6 @@
           console.error("Download Error:", error);
         }
       }
-
       function displayTableWithPagination(tableId, dataKey, allData) {
         const table = document.getElementById(tableId);
         const paginationDiv = document.getElementById(`${dataKey}Pagination`);
@@ -1690,93 +1890,82 @@
           paginationDiv.innerHTML = "";
           return;
         }
-        const totalRows =
-          allData.length -
-          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0);
+        const isCategoryTab = ["standart", "premium", "oem"].includes(dataKey);
+        const hasHeader = !isCategoryTab;
+        const dataOffset = hasHeader ? 1 : 0;
+        const totalRows = allData.length - dataOffset;
         const totalPages = Math.ceil(totalRows / rowsPerPage);
-        const startRowIndex =
-          (currentPage[dataKey] - 1) * rowsPerPage +
-          (dataKey === "sheet1" || dataKey === "sheet2" ? 1 : 0);
-        const endRowIndex = Math.min(
-          startRowIndex + rowsPerPage,
-          allData.length
-        );
-        let dataToDisplay = allData.slice(startRowIndex, endRowIndex);
-        let headers = [];
-        if (dataKey === "sheet1" || dataKey === "sheet2") {
-          headers = allData[0] || [];
-          if (allData.length > 0) {
-            dataToDisplay = [headers, ...dataToDisplay];
-          }
-        }
+        const startRowIndex = (currentPage[dataKey] - 1) * rowsPerPage;
+        const endRowIndex = Math.min(startRowIndex + rowsPerPage, totalRows);
+
         let html = "";
-        dataToDisplay.forEach((row, index) => {
+        if (hasHeader) {
+          html += "<thead><tr>";
+          (allData[0] || []).forEach((cell) => {
+            html += `<th>${processCell(cell)}</th>`;
+          });
+          html += "</tr></thead>";
+        }
+        html += "<tbody>";
+        const dataToDisplay = allData.slice(
+          startRowIndex + dataOffset,
+          endRowIndex + dataOffset
+        );
+        dataToDisplay.forEach((row) => {
           html += "<tr>";
           (row || []).forEach((cell) => {
-            const tag =
-              (dataKey === "sheet1" || dataKey === "sheet2") && index === 0
-                ? "th"
-                : "td";
-            const displayValue = processCell(cell);
-            html += `<${tag}>${displayValue}</${tag}>`;
+            html += `<td>${processCell(cell)}</td>`;
           });
           html += "</tr>";
         });
-        table.innerHTML = html;
+        html += "</tbody>";
+
+        if (isCategoryTab) {
+          displayCategoryTableWithPagination(tableId, dataKey, allData);
+        } else {
+          table.innerHTML = html;
+        }
+
         renderPaginationControls(paginationDiv, dataKey, totalPages);
       }
       function renderPaginationControls(paginationDiv, dataKey, totalPages) {
         paginationDiv.innerHTML = "";
         if (totalPages <= 1) return;
-
         const prevButton = document.createElement("button");
         prevButton.textContent = "Əvvəlki";
         prevButton.disabled = currentPage[dataKey] === 1;
         prevButton.onclick = () => changePage(dataKey, -1);
         paginationDiv.appendChild(prevButton);
-
         const pageSpan = document.createElement("span");
         pageSpan.textContent = `Səhifə ${currentPage[dataKey]} / ${totalPages}`;
         paginationDiv.appendChild(pageSpan);
-
         const nextButton = document.createElement("button");
         nextButton.textContent = "Növbəti";
         nextButton.disabled = currentPage[dataKey] === totalPages;
         nextButton.onclick = () => changePage(dataKey, 1);
         paginationDiv.appendChild(nextButton);
       }
-
       function changePage(dataKey, direction) {
-        currentPage[dataKey] += direction;
-        if (dataKey === "sheet1") {
+        const totalPages = Math.ceil(
+          (processedData[dataKey].length -
+            (["sheet1", "sheet2"].includes(dataKey) ? 1 : 0)) /
+            rowsPerPage
+        );
+        const newPage = currentPage[dataKey] + direction;
+        if (newPage < 1 || newPage > totalPages) return;
+        currentPage[dataKey] = newPage;
+
+        if (["standart", "premium", "oem"].includes(dataKey)) {
+          displayCategoryTableWithPagination(
+            dataKey + "Table",
+            dataKey,
+            processedData[dataKey]
+          );
+        } else {
           displayTableWithPagination(
-            "sheet1Table",
-            "sheet1",
-            processedData.sheet1
-          );
-        } else if (dataKey === "sheet2") {
-          displayTableWithPagination(
-            "sheet2Table",
-            "sheet2",
-            processedData.sheet2
-          );
-        } else if (dataKey === "standart") {
-          displayCategoryTableWithPagination(
-            "standartTable",
-            "standart",
-            processedData.standart
-          );
-        } else if (dataKey === "premium") {
-          displayCategoryTableWithPagination(
-            "premiumTable",
-            "premium",
-            processedData.premium
-          );
-        } else if (dataKey === "oem") {
-          displayCategoryTableWithPagination(
-            "oemTable",
-            "oem",
-            processedData.oem
+            dataKey + "Table",
+            dataKey,
+            processedData[dataKey]
           );
         }
       }
